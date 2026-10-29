@@ -1,13 +1,25 @@
 const { createClient } = require('@supabase/supabase-js');
 
 module.exports = async function handler(req, res) {
+    // 🚀 CORS HEADERS ADDED: Iske bina frontend se API block ho jati hai
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'OPTIONS,POST');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    // Handle preflight requests securely
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    const { short_id } = req.body;
+    // clicker_tg_id ab properly receive hoga
+    const { short_id, clicker_tg_id } = req.body;
 
-    // Pulls your Database credentials from Vercel Environment Variables securely
+    // Pulls Database credentials securely
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
@@ -15,7 +27,6 @@ module.exports = async function handler(req, res) {
          return res.status(500).json({ error: 'Vercel ENV variables missing' });
     }
 
-    // URL Cleanup (safeguard)
     const cleanUrl = supabaseUrl.trim().replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
 
     try {
@@ -30,13 +41,21 @@ module.exports = async function handler(req, res) {
         const cpm = adminSettings && adminSettings.cpm ? adminSettings.cpm : 200;
         const earn_amount = cpm / 1000;
 
+        // 🚀 FIXED: Record click in click_logs (Iske bina Daily Report chart 0 rahega)
+        if (clicker_tg_id) {
+            await supabase.from('click_logs').insert([{
+                link_id: linkData.id,
+                clicker_tg_id: clicker_tg_id
+            }]);
+        }
+
         // 3. Update LINK table
         await supabase.from('links').update({
             clicks: (linkData.clicks || 0) + 1,
             earnings: (linkData.earnings || 0) + earn_amount
         }).eq('id', linkData.id);
 
-        // 4. Fetch and Update USER table (This fixes Home Page Views!)
+        // 4. Fetch and Update USER table
         const { data: userData } = await supabase.from('users').select('*').eq('id', linkData.user_id).single();
         
         if (userData) {
@@ -44,11 +63,11 @@ module.exports = async function handler(req, res) {
                 balance: (userData.balance || 0) + earn_amount,
                 today_earnings: (userData.today_earnings || 0) + earn_amount,
                 total_earnings: (userData.total_earnings || 0) + earn_amount,
-                total_clicks: (userData.total_clicks || 0) + 1,     // HOME PAGE VIEW FIX
+                total_clicks: (userData.total_clicks || 0) + 1,
                 today_clicks: (userData.today_clicks || 0) + 1
             }).eq('id', userData.id);
 
-            // 5. Referral Commission Logic (Perfectly Integrated)
+            // 5. Referral Commission Logic
             const referPercent = adminSettings && adminSettings.refer_percent ? adminSettings.refer_percent : 10;
             if (referPercent > 0) {
                 const { data: referralData } = await supabase.from('referrals').select('referrer_tg_id').eq('referred_tg_id', userData.telegram_id).single();
