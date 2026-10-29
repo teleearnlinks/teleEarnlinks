@@ -279,8 +279,8 @@
         
         const BOT_USERNAME = 'teleEarnLinkbot'; 
         
-        // Ensure this matches exactly what you set in BotFather using /newapp 
-        const APP_SHORT_NAME = 'teleEarn'; 
+        // Yahan maine aapka diya hua link set kar diya hai taaki Unlock aur Refer dono mein yahi generate ho.
+        const APP_SHORT_NAME = 'httpsteleearnlinksvercelapp'; 
 
         let dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let currentUserData = null;
@@ -389,6 +389,7 @@
                 document.getElementById('profile-name').innerText = u.first_name;
                 document.getElementById('profile-avatar').innerText = u.first_name.charAt(0);
                 document.getElementById('profile-id').innerText = `ID: ${u.id}`;
+                // Referral Link updated automatically yahan
                 document.getElementById('referral-link-display').innerText = `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=ref_${u.id}`;
             }
 
@@ -427,7 +428,10 @@
                 try {
                     const shortId = Math.random().toString(36).substring(2, 8);
                     await dbClient.from('links').insert([{ original_url: url, short_id: shortId, user_id: currentUserData.id }]);
+                    
+                    // Short link (Unlock Link) updated automatically yahan
                     document.getElementById('short-link-display').innerText = `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=link_${shortId}`;
+                    
                     document.getElementById('shorten-result').classList.remove('hidden');
                     document.getElementById('long-url-input').value = '';
                 } catch (e) { safeAlert("Error generating link."); } 
