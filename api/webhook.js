@@ -56,4 +56,131 @@ export default async function handler(req, res) {
                 await tgAPI('sendMessage', { chat_id: chatId, text: msg, parse_mode: 'HTML', reply_markup: { force_reply: true } });
             } 
             else if (data === 'edit_media') {
-                const msg = `📸 <b>Media Setup</b>\n\n📌
+                const msg = `📸 <b>Media Setup</b>\n\n📌 <b>Reply to this exact message</b> with a Photo or a Video to set it as your welcome media.`;
+                await tgAPI('sendMessage', { chat_id: chatId, text: msg, parse_mode: 'HTML', reply_markup: { force_reply: true } });
+            } 
+            else if (data === 'edit_btn') {
+                const msg = `🔘 <b>Button Name Setup</b>\n\n📌 <b>Reply to this exact message</b> with your new Button Text.`;
+                await tgAPI('sendMessage', { chat_id: chatId, text: msg, parse_mode: 'HTML', reply_markup: { force_reply: true } });
+            } 
+            else if (data === 'edit_color') {
+                const colorMenu = `🎨 <b>Select Button Color:</b>`;
+                const colors = {
+                    inline_keyboard: [
+                        [{ text: "🟦 Primary (Blue)", callback_data: "set_color_primary", style: "primary" }],
+                        [{ text: "🟩 Success (Green)", callback_data: "set_color_success", style: "success" }],
+                        [{ text: "🟥 Danger (Red)", callback_data: "set_color_danger", style: "danger" }],
+                        [{ text: "⬅️ Back", callback_data: "admin_home", style: "primary" }]
+                    ]
+                };
+                await tgAPI('editMessageText', { chat_id: chatId, message_id: query.message.message_id, text: colorMenu, parse_mode: 'HTML', reply_markup: colors });
+            }
+            else if (data.startsWith('set_color_')) {
+                const newColor = data.replace('set_color_', '');
+                if (settingsId) await supabase.from('settings').update({ button_color: newColor }).eq('id', settingsId);
+                else await supabase.from('settings').insert([{ button_color: newColor }]);
+                await tgAPI('editMessageText', { chat_id: chatId, message_id: query.message.message_id, text: `✅ <b>Button color successfully set to ${newColor.toUpperCase()}!</b>`, parse_mode: 'HTML', reply_markup: backBtn });
+            }
+            else if (data === 'remove_media') {
+                if (settingsId) await supabase.from('settings').update({ welcome_image: null }).eq('id', settingsId);
+                await tgAPI('editMessageText', { chat_id: chatId, message_id: query.message.message_id, text: "✅ <b>Media removed successfully!</b>", parse_mode: 'HTML', reply_markup: backBtn });
+            } 
+            else if (data === 'preview') {
+                let caption = currentSettings?.welcome_text || `🌟 <b>Welcome to teleEarn!</b> 🌟\n\nClick below to open your Dashboard!`;
+                let mediaInfo = currentSettings?.welcome_image || '';
+                let buttonText = currentSettings?.button_text || "🚀 Open teleEarn Dashboard 🚀";
+                let buttonColor = currentSettings?.button_color || "primary";
+
+                const finalUrl = 'https://t.me/teleEarnLinkbot/httpsteleearnlinksvercelapp';
+                const replyMarkup = { inline_keyboard: [[{ text: buttonText, url: finalUrl, style: buttonColor }]] };
+
+                if (mediaInfo) {
+                    if (mediaInfo.startsWith('video:')) {
+                        await tgAPI('sendVideo', { chat_id: chatId, video: mediaInfo.replace('video:', ''), caption: caption, parse_mode: 'HTML', reply_markup: replyMarkup });
+                    } else {
+                        await tgAPI('sendPhoto', { chat_id: chatId, photo: mediaInfo.replace('photo:', ''), caption: caption, parse_mode: 'HTML', reply_markup: replyMarkup });
+                    }
+                } else {
+                    await tgAPI('sendMessage', { chat_id: chatId, text: caption, parse_mode: 'HTML', reply_markup: replyMarkup });
+                }
+            }
+            return res.status(200).send('OK');
+        }
+
+        // ==========================================
+        // 2️⃣ MESSAGES & ADMIN REPLIES
+        // ==========================================
+        if (update && update.message) {
+            const msg = update.message;
+            const chatId = msg.chat.id;
+            const text = msg.text || '';
+            const isAdmin = (chatId === ADMIN_ID);
+
+            // ADMIN REPLIES (Data Save)
+            if (isAdmin && msg.reply_to_message) {
+                const replyText = msg.reply_to_message.text || '';
+                const backBtn = { inline_keyboard: [[{ text: "⬅️ Back to Admin", callback_data: "admin_home", style: "primary" }]] };
+                
+                if (replyText.includes("Welcome Text Setup")) {
+                    if (settingsId) await supabase.from('settings').update({ welcome_text: text }).eq('id', settingsId);
+                    else await supabase.from('settings').insert([{ welcome_text: text }]);
+                    await tgAPI('sendMessage', { chat_id: chatId, text: "✅ <b>Text Updated successfully!</b>", parse_mode: 'HTML', reply_markup: backBtn });
+                } 
+                else if (replyText.includes("Media Setup")) {
+                    let mediaToSave = '';
+                    if (msg.photo && msg.photo.length > 0) mediaToSave = 'photo:' + msg.photo[msg.photo.length - 1].file_id;
+                    else if (msg.video) mediaToSave = 'video:' + msg.video.file_id;
+                    else if (msg.animation) mediaToSave = 'video:' + msg.animation.file_id;
+
+                    if (mediaToSave) {
+                        if (settingsId) await supabase.from('settings').update({ welcome_image: mediaToSave }).eq('id', settingsId);
+                        else await supabase.from('settings').insert([{ welcome_image: mediaToSave }]);
+                        await tgAPI('sendMessage', { chat_id: chatId, text: "✅ <b>Media Updated successfully!</b>", parse_mode: 'HTML', reply_markup: backBtn });
+                    } else {
+                        await tgAPI('sendMessage', { chat_id: chatId, text: "❌ <b>Invalid media.</b> Please reply with an actual Photo or Video from your gallery.", parse_mode: 'HTML', reply_markup: backBtn });
+                    }
+                }
+                else if (replyText.includes("Button Name Setup")) {
+                    if (settingsId) await supabase.from('settings').update({ button_text: text }).eq('id', settingsId);
+                    else await supabase.from('settings').insert([{ button_text: text }]);
+                    await tgAPI('sendMessage', { chat_id: chatId, text: "✅ <b>Button Name Updated successfully!</b>", parse_mode: 'HTML', reply_markup: backBtn });
+                }
+                return res.status(200).send('OK');
+            }
+
+            // NORMAL USER: /start Command
+            if (text.startsWith('/start')) {
+                const param = text.split(' ')[1] || '';
+                let finalUrl = 'https://t.me/teleEarnLinkbot/httpsteleearnlinksvercelapp';
+                if (param) finalUrl += `?startapp=${param}`;
+
+                let caption = currentSettings?.welcome_text || `🌟 <b>Welcome to teleEarn!</b> 🌟\n\nClick below to open your Dashboard!`;
+                let mediaInfo = currentSettings?.welcome_image || '';
+                let buttonText = currentSettings?.button_text || "🚀 Open teleEarn Dashboard 🚀";
+                let buttonColor = currentSettings?.button_color || "primary";
+
+                const replyMarkup = { inline_keyboard: [[{ text: buttonText, url: finalUrl, style: buttonColor }]] };
+
+                if (mediaInfo) {
+                    if (mediaInfo.startsWith('video:')) {
+                        await tgAPI('sendVideo', { chat_id: chatId, video: mediaInfo.replace('video:', ''), caption: caption, parse_mode: 'HTML', reply_markup: replyMarkup });
+                    } else {
+                        await tgAPI('sendPhoto', { chat_id: chatId, photo: mediaInfo.replace('photo:', ''), caption: caption, parse_mode: 'HTML', reply_markup: replyMarkup });
+                    }
+                } else {
+                    await tgAPI('sendMessage', { chat_id: chatId, text: caption, parse_mode: 'HTML', reply_markup: replyMarkup });
+                }
+            }
+            
+            // ADMIN MENU COMMAND
+            else if (isAdmin && text === '/admin') {
+                const adminMenu = `🎛 <b>teleEarn Admin Control Center</b>\n\nConfigure your bot's Welcome Screen easily. Select an option below:`;
+                await tgAPI('sendMessage', { chat_id: chatId, text: adminMenu, parse_mode: 'HTML', reply_markup: mainAdminMenu });
+            }
+        }
+        res.status(200).send('OK');
+    } catch (error) {
+        console.error(error);
+        res.status(200).send('Error');
+    }
+}
