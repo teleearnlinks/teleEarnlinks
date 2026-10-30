@@ -1,9 +1,13 @@
 export default async function handler(req, res) {
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'OPTIONS,POST');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     const { referrer_id, new_user } = req.body;
-    
-    // Pulls your Telegram Bot Token from Vercel Environment Variables
     const BOT_TOKEN = process.env.BOT_TOKEN;
 
     if (!BOT_TOKEN) return res.status(500).json({ error: 'BOT_TOKEN missing' });
@@ -19,8 +23,7 @@ export default async function handler(req, res) {
                 text: messageText,
                 parse_mode: 'HTML',
                 reply_markup: {
-                    // Updated with your actual live bot username
-                    inline_keyboard: [[{ text: "👥 View Referrals", url: "https://t.me/teleEarnLinkbot/TeleShortLink" }]]
+                    inline_keyboard: [[{ text: "👥 View Referrals", url: "https://t.me/teleEarnLinkbot/httpsteleearnlinksvercelapp" }]]
                 }
             })
         });
