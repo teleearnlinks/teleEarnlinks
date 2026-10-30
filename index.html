@@ -26,20 +26,17 @@
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Custom Select Styling */
         select { -webkit-appearance: none; -moz-appearance: none; appearance: none; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="%2394a3b8" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 10px center; background-size: 20px; }
     </style>
 </head>
 <body>
 
-    <!-- LOADING SCREEN -->
     <div id="ui-loading" class="fixed inset-0 flex flex-col items-center justify-center bg-[#0f172a] z-50">
         <i class="fa-solid fa-bolt text-5xl text-indigo-500 mb-4 animate-pulse"></i>
         <h2 class="text-2xl font-bold text-white mb-2" id="loading-title">teleEarn</h2>
         <p class="text-slate-400 text-sm" id="loading-text">Connecting to servers...</p>
     </div>
 
-    <!-- MAINTENANCE SCREEN -->
     <div id="ui-maintenance" class="fixed inset-0 flex flex-col items-center justify-center bg-[#0f172a] z-50 hidden fade-in">
         <div class="glass-panel p-8 max-w-sm text-center border border-amber-500/30">
             <div class="w-20 h-20 bg-amber-500/20 rounded-full mx-auto flex items-center justify-center mb-6"><i class="fa-solid fa-person-digging text-4xl text-amber-500"></i></div>
@@ -49,7 +46,6 @@
         </div>
     </div>
 
-    <!-- WARNING POPUP -->
     <div id="warning-popup" class="fixed inset-0 z-[60] bg-[#0f172a]/90 backdrop-blur-sm flex items-center justify-center hidden fade-in">
         <div class="glass-panel p-6 m-4 max-w-sm text-center border border-red-500/50 shadow-2xl shadow-red-500/20">
             <div class="w-16 h-16 bg-red-500/20 rounded-full mx-auto flex items-center justify-center mb-4"><i class="fa-solid fa-triangle-exclamation text-3xl text-red-500"></i></div>
@@ -59,9 +55,7 @@
         </div>
     </div>
 
-    <!-- MAIN APP UI -->
     <div id="ui-main-app" class="hidden">
-        <!-- HEADER -->
         <header class="flex items-center justify-between p-4 glass-panel m-4 sticky top-4 z-30">
             <div class="flex items-center space-x-3">
                 <div class="w-11 h-11 rounded-full primary-gradient flex items-center justify-center shadow-lg"><i class="fa-solid fa-bolt text-white text-lg"></i></div>
@@ -73,7 +67,6 @@
         </header>
 
         <div id="pages-container">
-            <!-- PAGE: HOME -->
             <div id="page-home" class="page-content fade-in">
                 <div class="mx-4 mb-6 p-6 glass-panel relative overflow-hidden">
                     <h2 class="text-xs font-bold text-indigo-400 mb-3 uppercase tracking-wider"><i class="fa-solid fa-link mr-2"></i> Create Short Link</h2>
@@ -115,7 +108,6 @@
                 </div>
             </div>
 
-            <!-- PAGE: LINKS -->
             <div id="page-links" class="page-content hidden mx-4 mb-6 fade-in">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-link text-indigo-400 mr-2"></i> My Links</h2>
@@ -125,7 +117,6 @@
                 </div>
             </div>
 
-            <!-- PAGE: REFER -->
             <div id="page-refer" class="page-content hidden mx-4 mb-6 fade-in">
                 <div class="glass-panel p-6 text-center mb-6 relative overflow-hidden">
                     <div class="absolute inset-0 bg-gradient-to-b from-indigo-500/10 to-transparent pointer-events-none"></div>
@@ -155,11 +146,9 @@
                 </div>
             </div>
 
-            <!-- PAGE: WALLET & WITHDRAWALS -->
             <div id="page-wallet" class="page-content hidden mx-4 mb-6 fade-in">
                 <h2 class="text-xl font-bold mb-4 text-white"><i class="fa-solid fa-wallet text-emerald-400 mr-2"></i> My Wallet</h2>
                 
-                <!-- Balance Box -->
                 <div class="glass-panel p-8 mb-6 text-center border border-emerald-500/30 bg-gradient-to-br from-emerald-900/20 to-transparent relative overflow-hidden">
                     <i class="fa-solid fa-coins absolute -right-6 -bottom-6 text-8xl text-emerald-500/10"></i>
                     <div class="text-sm text-emerald-200 mb-2 font-medium">Available Balance</div>
@@ -167,14 +156,12 @@
                     <div class="text-xs text-slate-400 mb-6">Minimum Withdrawal: <span id="min-withdraw-display" class="font-bold text-white">$5.00</span></div>
                 </div>
 
-                <!-- Withdrawal Form -->
                 <div class="glass-panel p-6 mb-6 border border-slate-700">
                     <h3 class="font-bold text-sm text-white mb-4 uppercase tracking-wider border-b border-slate-700 pb-2">Request Payout</h3>
                     
                     <div class="mb-4">
                         <label class="block text-xs font-bold text-slate-400 mb-2">Select Payment Method</label>
                         <select id="withdraw-method" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-3 text-sm focus:outline-none focus:border-indigo-500">
-                            <!-- Populated dynamically -->
                             <option value="">Loading methods...</option>
                         </select>
                     </div>
@@ -194,14 +181,12 @@
                     </button>
                 </div>
 
-                <!-- History -->
                 <h3 class="font-bold text-sm text-slate-300 mb-3 px-2"><i class="fa-solid fa-clock-rotate-left mr-2"></i> Payout History</h3>
                 <div id="withdrawal-history-list" class="space-y-3">
                     <div class="glass-panel p-6 text-center text-slate-500 text-xs">No transactions yet.</div>
                 </div>
             </div>
 
-            <!-- PAGE: PROFILE -->
             <div id="page-profile" class="page-content hidden mx-4 mb-6 fade-in">
                 <div class="glass-panel p-8 mb-6 text-center relative overflow-hidden">
                     <div class="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-transparent"></div>
@@ -212,14 +197,11 @@
 
                 <div class="glass-panel p-2 mb-4 shadow-lg">
                     <h3 class="text-xs font-bold text-slate-400 px-4 pt-4 pb-2 uppercase tracking-wider">Social Links</h3>
-                    
                     <a id="link-tg" href="#" target="_blank" class="hidden items-center justify-between p-4 hover:bg-slate-800/50 rounded-xl transition">
                         <div class="flex items-center"><i class="fa-brands fa-telegram w-8 text-blue-400 text-2xl text-center"></i><span class="font-medium text-sm text-slate-200 ml-2">Official Channel</span></div>
                         <i class="fa-solid fa-arrow-up-right-from-square text-xs text-slate-500"></i>
                     </a>
-                    
                     <div id="div-line-yt" class="hidden h-px bg-slate-700/50 mx-4"></div>
-                    
                     <a id="link-yt" href="#" target="_blank" class="hidden items-center justify-between p-4 hover:bg-slate-800/50 rounded-xl transition">
                         <div class="flex items-center"><i class="fa-brands fa-youtube w-8 text-red-500 text-2xl text-center"></i><span class="font-medium text-sm text-slate-200 ml-2">YouTube Channel</span></div>
                         <i class="fa-solid fa-arrow-up-right-from-square text-xs text-slate-500"></i>
@@ -238,11 +220,10 @@
                     </a>
                 </div>
 
-                <div class="text-center text-[10px] text-slate-500 mt-8 mb-2">Developed & Maintained by <span class="font-bold text-indigo-400">Nobi Bots</span></div>
+                <div class="text-center text-[10px] text-slate-500 mt-8 mb-2">Developed & Maintained by <span class="font-bold text-indigo-400">Priyans</span></div>
             </div>
         </div>
 
-        <!-- BOTTOM NAVIGATION -->
         <nav class="fixed bottom-0 left-0 w-full bg-[#0f172a]/95 backdrop-blur-xl border-t border-slate-800 z-40 pb-safe">
             <div class="flex justify-between items-end px-2 pt-2 pb-3">
                 <button class="nav-btn nav-item active flex flex-col items-center w-1/5" data-target="page-home"><div class="nav-icon w-10 h-10 rounded-xl flex items-center justify-center text-lg mb-1"><i class="fa-solid fa-house"></i></div><span class="text-[10px] font-medium tracking-wide">Home</span></button>
@@ -254,7 +235,6 @@
         </nav>
     </div>
 
-    <!-- ADVANCED AD VIEWING UI -->
     <div id="ui-ad-viewer" class="hidden min-h-screen flex flex-col items-center justify-center p-6 z-50">
         <div class="glass-panel w-full max-w-sm p-8 text-center shadow-2xl relative overflow-hidden">
             <div id="ad-blocker-warning" class="hidden bg-red-900/50 border border-red-500 rounded-lg p-4 mb-4">
@@ -272,10 +252,9 @@
     </div>
 
     <script>
-        // --- API CONFIGURATION ---
         const SUPABASE_URL = 'https://zrhrvbkefmybketbiicw.supabase.co'; 
         const SUPABASE_ANON_KEY = 'sb_publishable_Iwz3ILjEoOrr_PBqRc7nIQ_UunV1f1y';
-        const VERCEL_API_URL = 'https://teleearnlinks-git-main-tele-earn.vercel.app/api'; 
+        const VERCEL_API_URL = 'https://teleearnlinks.vercel.app/api'; 
         
         const BOT_USERNAME = 'teleEarnLinkbot'; 
         const APP_SHORT_NAME = 'httpsteleearnlinksvercelapp'; 
@@ -290,6 +269,7 @@
 
         let currentAdStep = 1; let totalAdsRequired = 1;
         window.invalidClickReason = null; 
+        window.targetUrlForClick = null; 
 
         function safeAlert(msg) { try { tg.showAlert(msg); } catch(e) { alert(msg); } }
         function copyText(text) {
@@ -312,7 +292,6 @@
         async function initApp() {
             try {
                 await loadAdminSettings();
-
                 if (adminSettings.maintenance_mode) {
                     document.getElementById('ui-loading').classList.add('hidden');
                     document.getElementById('ui-maintenance').classList.remove('hidden');
@@ -364,12 +343,15 @@
 
         async function verifyLinkStatus() {
             try {
-                const { data: linkData } = await dbClient.from('links').select('id, user_id').eq('short_id', window.currentShortId).single();
-                if(linkData && currentUserData) {
-                    if(linkData.user_id === currentUserData.id) { window.invalidClickReason = "self"; return; }
-                    if(currentUserData.telegram_id) {
-                        const { data: logs } = await dbClient.from('click_logs').select('id').eq('link_id', linkData.id).eq('clicker_tg_id', currentUserData.telegram_id);
-                        if(logs && logs.length > 0) window.invalidClickReason = "duplicate";
+                const { data: linkData } = await dbClient.from('links').select('id, user_id, original_url').eq('short_id', window.currentShortId).single();
+                if(linkData) {
+                    window.targetUrlForClick = linkData.original_url;
+                    if(currentUserData) {
+                        if(linkData.user_id === currentUserData.id) { window.invalidClickReason = "self"; return; }
+                        if(currentUserData.telegram_id) {
+                            const { data: logs } = await dbClient.from('click_logs').select('id').eq('link_id', linkData.id).eq('clicker_tg_id', currentUserData.telegram_id);
+                            if(logs && logs.length > 0) window.invalidClickReason = "duplicate";
+                        }
                     }
                 }
             } catch(e) {}
@@ -377,7 +359,6 @@
 
         function setupDashboard() {
             document.getElementById('warning-popup').classList.remove('hidden');
-            
             const u = tg.initDataUnsafe?.user;
             if(u) {
                 document.getElementById('user-greeting').innerText = `Hello, ${u.first_name}!`;
@@ -482,17 +463,7 @@
                     if(w.status === 'approved') { color = 'text-emerald-400'; icon = 'fa-check-double'; }
                     if(w.status === 'rejected') { color = 'text-red-400'; icon = 'fa-xmark'; }
 
-                    list.innerHTML += `
-                        <div class="glass-panel p-4 flex justify-between items-center mb-3">
-                            <div>
-                                <div class="font-bold text-white text-sm mb-1">${w.method}</div>
-                                <div class="text-[10px] text-slate-400">${dateStr}</div>
-                            </div>
-                            <div class="text-right">
-                                <div class="font-bold text-white mb-1">$${w.amount.toFixed(2)}</div>
-                                <div class="text-[10px] font-bold uppercase ${color}"><i class="fa-solid ${icon} mr-1"></i>${w.status}</div>
-                            </div>
-                        </div>`;
+                    list.innerHTML += `<div class="glass-panel p-4 flex justify-between items-center mb-3"><div><div class="font-bold text-white text-sm mb-1">${w.method}</div><div class="text-[10px] text-slate-400">${dateStr}</div></div><div class="text-right"><div class="font-bold text-white mb-1">$${w.amount.toFixed(2)}</div><div class="text-[10px] font-bold uppercase ${color}"><i class="fa-solid ${icon} mr-1"></i>${w.status}</div></div></div>`;
                 });
             } catch(e) {}
         }
@@ -537,11 +508,9 @@
             const monthStr = document.getElementById('report-month').value;
             if(!monthStr || !currentUserData.id) return;
             listDiv.innerHTML = '<div class="text-center text-slate-500 py-4"><i class="fa-solid fa-circle-notch fa-spin"></i> Fetching...</div>';
-
             const [year, month] = monthStr.split('-');
             const startDate = new Date(year, month - 1, 1).toISOString();
             const endDate = new Date(year, month, 1).toISOString();
-
             try {
                 const { data: links } = await dbClient.from('links').select('id').eq('user_id', currentUserData.id);
                 if(!links || links.length === 0) return listDiv.innerHTML = '<div class="text-center text-slate-500 text-xs py-4">No data found.</div>';
@@ -563,7 +532,6 @@
             } catch(e) {}
         }
 
-        // AD FLOW LOGIC
         function startAdFlow() {
             document.getElementById('ui-loading').classList.add('hidden'); document.getElementById('ui-ad-viewer').classList.remove('hidden'); setupAdStep();
         }
@@ -613,6 +581,11 @@
             const getLinkBtn = document.getElementById('btn-get-link'); 
             getLinkBtn.classList.remove('hidden');
             
+            // 🔥 INSTANT CLICK LOGIC
+            getLinkBtn.onclick = () => {
+                if(window.targetUrlForClick) tg.openLink(window.targetUrlForClick);
+            };
+            
             if (window.invalidClickReason === "self") {
                 safeAlert("⚠️ This is your own link! Views & Earnings will not be added for self-clicks.");
             } else if (window.invalidClickReason === "duplicate") {
@@ -621,24 +594,13 @@
                 let clickerId = tg.initDataUnsafe?.user?.id || 0;
                 try { 
                     const response = await fetch(`${VERCEL_API_URL}/reward`, { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'application/json' }, 
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, 
                         body: JSON.stringify({ short_id: window.currentShortId, clicker_tg_id: clickerId }) 
                     }); 
-                    
                     const data = await response.json();
-                    if(!response.ok) {
-                        safeAlert("API Error: " + (data.error || "Unknown Error"));
-                    } else {
-                        console.log("View & Earnings Added Successfully!"); 
-                    }
-                } catch(e){
-                    safeAlert("Network Error: " + e.message);
-                }
+                    if(!response.ok) { safeAlert("API Error: " + (data.error || "Unknown Error")); }
+                } catch(e){ safeAlert("Network Error: " + e.message); }
             }
-
-            const { data } = await dbClient.from('links').select('original_url').eq('short_id', window.currentShortId).single();
-            if(data) getLinkBtn.onclick = () => tg.openLink(data.original_url);
         }
 
         window.onload = initApp;
