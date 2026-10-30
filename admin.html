@@ -19,7 +19,6 @@
 </head>
 <body class="flex h-screen overflow-hidden">
 
-    <!-- LOGIN SCREEN -->
     <div id="login-screen" class="absolute inset-0 z-50 bg-[#0f172a] flex items-center justify-center">
         <div class="glass-panel p-8 max-w-sm w-full text-center shadow-2xl">
             <div class="w-16 h-16 mx-auto bg-indigo-500/20 rounded-xl flex items-center justify-center mb-6">
@@ -31,9 +30,7 @@
         </div>
     </div>
 
-    <!-- ADMIN DASHBOARD -->
     <div id="admin-dashboard" class="flex w-full h-full hidden">
-        <!-- Desktop Sidebar -->
         <aside class="w-64 bg-slate-900 border-r border-slate-800 p-4 hidden md:flex flex-col">
             <h1 class="text-xl font-bold text-indigo-500 mb-8 px-2"><i class="fa-solid fa-bolt mr-2"></i>TeleAdmin</h1>
             <nav class="space-y-2 flex-1">
@@ -46,7 +43,6 @@
             <button class="w-full text-left p-3 rounded hover:bg-red-900/50 text-slate-400 hover:text-red-400 transition border border-transparent hover:border-red-900" onclick="location.reload()"><i class="fa-solid fa-power-off mr-2 w-5 text-center"></i> Logout</button>
         </aside>
 
-        <!-- Mobile Header & Main -->
         <div class="md:hidden flex flex-col w-full h-full">
             <header class="flex justify-between items-center bg-slate-900 p-4 border-b border-slate-800">
                 <span class="font-bold text-indigo-400"><i class="fa-solid fa-bolt mr-2"></i>TeleAdmin</span>
@@ -61,15 +57,10 @@
             <main id="mobile-main" class="flex-1 overflow-y-auto p-4"></main>
         </div>
 
-        <!-- Desktop Main -->
         <main id="desktop-main" class="hidden md:block flex-1 p-8 overflow-y-auto bg-[#0f172a]"></main>
     </div>
 
-    <!-- ============================================== -->
-    <!-- TEMPLATES FOR TABS                             -->
-    <!-- ============================================== -->
-
-    <!-- TAB: DASHBOARD -->
+    <!-- TEMPLATES -->
     <template id="tpl-dashboard">
         <h2 class="text-2xl font-bold mb-6">Real-Time Overview</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -96,7 +87,6 @@
         </div>
     </template>
 
-    <!-- TAB: USERS -->
     <template id="tpl-users">
         <h2 class="text-2xl font-bold mb-6">User Management</h2>
         <div class="glass-panel overflow-x-auto shadow-xl">
@@ -117,7 +107,6 @@
         </div>
     </template>
 
-    <!-- TAB: WITHDRAWALS -->
     <template id="tpl-withdrawals">
         <h2 class="text-2xl font-bold mb-6">Withdrawal Requests</h2>
         <div class="glass-panel overflow-x-auto shadow-xl">
@@ -138,11 +127,9 @@
         </div>
     </template>
 
-    <!-- TAB: SETTINGS -->
     <template id="tpl-settings">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold">App Settings & Customization</h2>
-            <!-- MAINTENANCE TOGGLE -->
             <label class="flex items-center space-x-2 cursor-pointer bg-slate-900 px-4 py-2 rounded-lg border border-slate-700">
                 <span class="text-sm font-bold text-slate-300">Maintenance Mode</span>
                 <input type="checkbox" id="set-maintenance" class="w-5 h-5 accent-red-500">
@@ -150,7 +137,6 @@
         </div>
 
         <div class="glass-panel p-8 max-w-4xl shadow-xl">
-            
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div><label class="block text-xs font-bold text-slate-400 mb-2 uppercase">Global CPM ($)</label><input type="number" step="0.01" id="set-cpm" class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-indigo-500 outline-none"></div>
                 <div><label class="block text-xs font-bold text-slate-400 mb-2 uppercase">Referral Bonus (%)</label><input type="number" id="set-ref" class="w-full bg-slate-900 border border-slate-700 rounded p-3 text-white focus:border-indigo-500 outline-none"></div>
@@ -188,7 +174,6 @@
         </div>
     </template>
 
-    <!-- TAB: BROADCAST -->
     <template id="tpl-broadcast">
         <h2 class="text-2xl font-bold mb-6">Bot Broadcast</h2>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -207,7 +192,7 @@
                         <span class="text-sm font-bold text-white">Include "👉 Open now 👈" Button</span>
                     </label>
                     <label class="block text-xs font-bold text-slate-400 mb-2 uppercase">Existing Mini App Web URL</label>
-                    <input type="url" id="bc-mini-app-url" value="https://tele-short-link.vercel.app/" class="w-full bg-slate-800 border border-slate-700 rounded p-3 text-white text-sm focus:border-indigo-500 outline-none">
+                    <input type="url" id="bc-mini-app-url" value="https://teleearnlinks.vercel.app/" class="w-full bg-slate-800 border border-slate-700 rounded p-3 text-white text-sm focus:border-indigo-500 outline-none">
                 </div>
                 <button id="btn-send-broadcast" onclick="startBroadcast()" class="w-full bg-amber-600 hover:bg-amber-500 px-6 py-4 rounded-lg font-bold text-white shadow-lg transition-colors flex items-center justify-center">
                     <i class="fa-solid fa-paper-plane mr-2"></i> Send to All Users
@@ -223,7 +208,7 @@
                 <div class="bg-[#0e1621] p-4 rounded-xl border border-slate-700 max-w-sm mx-auto shadow-2xl relative">
                     <div class="flex items-center space-x-3 mb-4 pb-3 border-b border-slate-800">
                         <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white"><i class="fa-solid fa-robot"></i></div>
-                        <div><div class="text-white font-bold text-sm">TeleShortLink Bot <i class="fa-solid fa-circle-check text-blue-400 text-xs"></i></div><div class="text-slate-400 text-[10px]">bot</div></div>
+                        <div><div class="text-white font-bold text-sm">teleEarn Bot <i class="fa-solid fa-circle-check text-blue-400 text-xs"></i></div><div class="text-slate-400 text-[10px]">bot</div></div>
                     </div>
                     <div class="tg-bubble p-2 inline-block max-w-[95%]">
                         <img id="prev-img" src="" class="hidden w-full rounded-lg mb-2 object-cover max-h-48">
@@ -236,16 +221,15 @@
     </template>
 
     <script>
-        // --- API CONFIGURATION ---
         const SUPABASE_URL = 'https://zrhrvbkefmybketbiicw.supabase.co'; 
         const SUPABASE_ANON_KEY = 'sb_publishable_Iwz3ILjEoOrr_PBqRc7nIQ_UunV1f1y';
-        const VERCEL_BROADCAST_API = 'https://teleearnlinks-git-main-tele-earn.vercel.app/api/broadcast'; 
+        // 🔥 RELATIVE PATH FIX FOR CORS ERROR
+        const VERCEL_BROADCAST_API = '/api/broadcast'; 
         const ADMIN_PASSWORD = "Priyans2109J"; 
         
         let dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let settingsId = null;
 
-        // LOGIN
         document.getElementById('btn-login').addEventListener('click', () => {
             if(document.getElementById('admin-password').value === ADMIN_PASSWORD) {
                 document.getElementById('login-screen').classList.add('hidden');
@@ -256,7 +240,6 @@
 
         function getActiveMain() { return window.innerWidth < 768 ? document.getElementById('mobile-main') : document.getElementById('desktop-main'); }
 
-        // TAB SWITCHER
         window.switchTab = function(tabName, btnEl) {
             document.querySelectorAll('.nav-btn').forEach(b => {
                 b.classList.remove('bg-indigo-600', 'text-white');
@@ -278,24 +261,19 @@
             if(tabName === 'broadcast') updatePreview(); 
         }
 
-        // --- DASHBOARD LOGIC ---
         async function loadDashboard() {
             try {
-                // Total Users
                 const { count: uCount } = await dbClient.from('users').select('*', { count: 'exact', head: true });
                 document.getElementById('stat-total-users').innerText = uCount || 0;
 
-                // Blocked Users
                 const { count: bCount } = await dbClient.from('users').select('*', { count: 'exact', head: true }).eq('is_blocked', true);
                 document.getElementById('stat-blocked').innerText = bCount || 0;
 
-                // Active Today (Count distinct clicks today)
                 const today = new Date().toISOString().split('T')[0];
                 const { data: activeData } = await dbClient.from('click_logs').select('clicker_tg_id').gte('created_at', today);
                 const uniqueActive = new Set(activeData?.map(d => d.clicker_tg_id)).size;
                 document.getElementById('stat-active-users').innerText = uniqueActive || 0;
 
-                // Financial Stats
                 const { data: wData } = await dbClient.from('withdrawals').select('amount, status');
                 let paid = 0, pending = 0;
                 if(wData) {
@@ -306,11 +284,9 @@
                 }
                 document.getElementById('stat-paid').innerText = `$${paid.toFixed(2)}`;
                 document.getElementById('stat-pending-amt').innerText = `$${pending.toFixed(2)}`;
-
             } catch(e) { console.error("Dash Error", e); }
         }
 
-        // --- USERS LOGIC ---
         async function loadUsers() {
             const tbody = document.getElementById('admin-users-list');
             try {
@@ -351,12 +327,9 @@
                 const { error } = await dbClient.from('users').delete().eq('id', userId);
                 if(error) throw error;
                 loadUsers();
-            } catch(e) {
-                alert("Deletion failed! (Tip: Enable 'Cascade Delete' on foreign keys in Supabase database settings). Error: " + e.message);
-            }
+            } catch(e) { alert("Deletion failed! Error: " + e.message); }
         }
 
-        // --- WITHDRAWALS LOGIC ---
         async function loadWithdrawals() {
             const tbody = document.getElementById('admin-withdraw-list');
             try {
@@ -394,8 +367,6 @@
             if(!confirm(`Mark this withdrawal as ${newStatus.toUpperCase()}?`)) return;
             try {
                 await dbClient.from('withdrawals').update({ status: newStatus }).eq('id', wId);
-                
-                // If rejected, refund money back to user balance
                 if(newStatus === 'rejected') {
                     const { data: u } = await dbClient.from('users').select('balance').eq('id', userId).single();
                     if(u) {
@@ -406,7 +377,6 @@
             } catch(e) { alert("Error updating status."); }
         }
 
-        // --- SETTINGS LOGIC ---
         async function loadSettings() {
             try {
                 const { data } = await dbClient.from('settings').select('*').limit(1).single();
@@ -454,7 +424,6 @@
             btn.innerHTML = originalHTML;
         }
 
-        // --- BROADCAST LOGIC ---
         window.updatePreview = function() {
             const img = document.getElementById('bc-image')?.value || '';
             const text = document.getElementById('bc-caption')?.value || 'Message will appear here...';
