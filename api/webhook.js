@@ -1,13 +1,16 @@
 const { createClient } = require('@supabase/supabase-js');
 
 export default async function handler(req, res) {
-    if (req.method === 'GET') return res.status(200).send('Converter Webhook Active!');
+    if (req.method === 'GET') return res.status(200).send('Public Converter Webhook Active!');
 
     try {
         const BOT_TOKEN = process.env.BOT_TOKEN;
         const SUPABASE_URL = process.env.SUPABASE_URL;
         const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
         const ADMIN_ID = parseInt(process.env.ADMIN_ID); 
+        
+        // ⚠️ Agar aapne BotFather me short name 'app' kar liya hai, toh isko 'app' kar dena.
+        const APP_SHORT_NAME = 'httpsteleearnlinksvercelapp'; 
 
         if (!BOT_TOKEN || !SUPABASE_URL || !SUPABASE_KEY) return res.status(200).send('Env missing');
 
@@ -17,9 +20,7 @@ export default async function handler(req, res) {
 
         const tgAPI = async (method, body) => {
             const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
             });
             return await response.json();
         };
@@ -50,24 +51,13 @@ export default async function handler(req, res) {
             if (chatId !== ADMIN_ID) return res.status(200).send('OK');
 
             if (data === 'admin_home') {
-                 const menu = `🎛 <b>teleEarn Master Admin Panel</b>\n\nConfigure Welcome Screen & Link Converter:`;
-                 await tgAPI('editMessageText', { chat_id: chatId, message_id: query.message.message_id, text: menu, parse_mode: 'HTML', reply_markup: mainAdminMenu });
+                 await tgAPI('editMessageText', { chat_id: chatId, message_id: query.message.message_id, text: `🎛 <b>teleEarn Master Admin Panel</b>\n\nConfigure Welcome Screen & Link Converter:`, parse_mode: 'HTML', reply_markup: mainAdminMenu });
             } 
-            else if (data === 'edit_text') {
-                await tgAPI('sendMessage', { chat_id: chatId, text: `📝 <b>Welcome Text Setup</b>\n📌 <b>Reply (Swipe Left)</b> with your new welcome text.`, parse_mode: 'HTML', reply_markup: { force_reply: true } });
-            } 
-            else if (data === 'edit_media') {
-                await tgAPI('sendMessage', { chat_id: chatId, text: `📸 <b>Media Setup</b>\n📌 <b>Reply (Swipe Left)</b> with a Photo or Video.`, parse_mode: 'HTML', reply_markup: { force_reply: true } });
-            } 
-            else if (data === 'edit_btn') {
-                await tgAPI('sendMessage', { chat_id: chatId, text: `🔘 <b>Button Setup</b>\n📌 <b>Reply (Swipe Left)</b> with your new Button Text.`, parse_mode: 'HTML', reply_markup: { force_reply: true } });
-            } 
-            else if (data === 'edit_header') {
-                await tgAPI('sendMessage', { chat_id: chatId, text: `🔝 <b>Converter Header Setup</b>\n📌 <b>Reply (Swipe Left)</b> with the Header text for converted posts.`, parse_mode: 'HTML', reply_markup: { force_reply: true } });
-            } 
-            else if (data === 'edit_footer') {
-                await tgAPI('sendMessage', { chat_id: chatId, text: `🔚 <b>Converter Footer Setup</b>\n📌 <b>Reply (Swipe Left)</b> with the Footer text for converted posts.`, parse_mode: 'HTML', reply_markup: { force_reply: true } });
-            }
+            else if (data === 'edit_text') await tgAPI('sendMessage', { chat_id: chatId, text: `📝 <b>Welcome Text Setup</b>\n📌 <b>Reply (Swipe Left)</b> with your new welcome text.`, parse_mode: 'HTML', reply_markup: { force_reply: true } });
+            else if (data === 'edit_media') await tgAPI('sendMessage', { chat_id: chatId, text: `📸 <b>Media Setup</b>\n📌 <b>Reply (Swipe Left)</b> with a Photo or Video.`, parse_mode: 'HTML', reply_markup: { force_reply: true } });
+            else if (data === 'edit_btn') await tgAPI('sendMessage', { chat_id: chatId, text: `🔘 <b>Button Setup</b>\n📌 <b>Reply (Swipe Left)</b> with your new Button Text.`, parse_mode: 'HTML', reply_markup: { force_reply: true } });
+            else if (data === 'edit_header') await tgAPI('sendMessage', { chat_id: chatId, text: `🔝 <b>Converter Header Setup</b>\n📌 <b>Reply (Swipe Left)</b> with the Header text.`, parse_mode: 'HTML', reply_markup: { force_reply: true } });
+            else if (data === 'edit_footer') await tgAPI('sendMessage', { chat_id: chatId, text: `🔚 <b>Converter Footer Setup</b>\n📌 <b>Reply (Swipe Left)</b> with the Footer text.`, parse_mode: 'HTML', reply_markup: { force_reply: true } });
             else if (data === 'edit_color') {
                 const colorMenu = { inline_keyboard: [[{ text: "🟦 Blue", callback_data: "set_color_primary" }, { text: "🟩 Green", callback_data: "set_color_success" }, { text: "🟥 Red", callback_data: "set_color_danger" }], [{ text: "⬅️ Back", callback_data: "admin_home" }]] };
                 await tgAPI('editMessageText', { chat_id: chatId, message_id: query.message.message_id, text: `🎨 <b>Select Button Color:</b>`, parse_mode: 'HTML', reply_markup: colorMenu });
@@ -84,10 +74,8 @@ export default async function handler(req, res) {
             else if (data === 'preview') {
                 let caption = currentSettings?.welcome_text || `🌟 Welcome!`;
                 let mediaInfo = currentSettings?.welcome_image || '';
-                let buttonText = currentSettings?.button_text || "🚀 Open Dashboard";
-                let buttonColor = currentSettings?.button_color || "primary";
-
-                const replyMarkup = { inline_keyboard: [[{ text: buttonText, url: 'https://t.me/teleEarnLinkbot/httpsteleearnlinksvercelapp', style: buttonColor }]] };
+                const replyMarkup = { inline_keyboard: [[{ text: currentSettings?.button_text || "🚀 Open Dashboard", url: `https://t.me/teleEarnLinkbot/${APP_SHORT_NAME}`, style: currentSettings?.button_color || "primary" }]] };
+                
                 if (mediaInfo.startsWith('video:')) await tgAPI('sendVideo', { chat_id: chatId, video: mediaInfo.replace('video:', ''), caption: caption, parse_mode: 'HTML', reply_markup: replyMarkup });
                 else if (mediaInfo.startsWith('photo:')) await tgAPI('sendPhoto', { chat_id: chatId, photo: mediaInfo.replace('photo:', ''), caption: caption, parse_mode: 'HTML', reply_markup: replyMarkup });
                 else await tgAPI('sendMessage', { chat_id: chatId, text: caption, parse_mode: 'HTML', reply_markup: replyMarkup });
@@ -101,7 +89,7 @@ export default async function handler(req, res) {
         if (update && update.message) {
             const msg = update.message;
             const chatId = msg.chat.id;
-            const text = msg.text || msg.caption || ''; // Reads both normal text & media captions
+            const text = msg.text || msg.caption || ''; 
             const isAdmin = (chatId === ADMIN_ID);
             const backBtn = { inline_keyboard: [[{ text: "⬅️ Back to Admin", callback_data: "admin_home" }]] };
 
@@ -130,80 +118,85 @@ export default async function handler(req, res) {
 
             // 🟢 COMMANDS
             if (text.startsWith('/start')) {
-                // (Normal /start logic... we don't convert /start)
                 const param = text.split(' ')[1] || '';
-                let finalUrl = 'https://t.me/teleEarnLinkbot/httpsteleearnlinksvercelapp';
+                let finalUrl = `https://t.me/teleEarnLinkbot/${APP_SHORT_NAME}`;
                 if (param) finalUrl += `?startapp=${param}`;
-                let caption = currentSettings?.welcome_text || `🌟 Welcome to teleEarn!`;
+                
+                let caption = currentSettings?.welcome_text || `🌟 <b>Welcome to teleEarn!</b> 🌟\n\nClick below to open your Dashboard!`;
                 let mediaInfo = currentSettings?.welcome_image || '';
-                let buttonText = currentSettings?.button_text || "🚀 Open Dashboard";
-                let buttonColor = currentSettings?.button_color || "primary";
-                const replyMarkup = { inline_keyboard: [[{ text: buttonText, url: finalUrl, style: buttonColor }]] };
+                const replyMarkup = { inline_keyboard: [[{ text: currentSettings?.button_text || "🚀 Open Dashboard", url: finalUrl, style: currentSettings?.button_color || "primary" }]] };
 
                 if (mediaInfo.startsWith('video:')) await tgAPI('sendVideo', { chat_id: chatId, video: mediaInfo.replace('video:', ''), caption: caption, parse_mode: 'HTML', reply_markup: replyMarkup });
                 else if (mediaInfo.startsWith('photo:')) await tgAPI('sendPhoto', { chat_id: chatId, photo: mediaInfo.replace('photo:', ''), caption: caption, parse_mode: 'HTML', reply_markup: replyMarkup });
                 else await tgAPI('sendMessage', { chat_id: chatId, text: caption, parse_mode: 'HTML', reply_markup: replyMarkup });
                 return res.status(200).send('OK');
             }
+            
+            // 🟢 HELP COMMAND (Premium Feature)
+            if (text.startsWith('/help')) {
+                const helpMsg = `🤖 <b>teleEarn - Ultimate Help Guide</b>\n━━━━━━━━━━━━━━━━━━━━\n\n🔗 <b>1. Link Converter (Auto-Magic)</b>\nJust forward any post or message containing links (like TeraBox, Drive) directly to this bot. I will instantly replace them with your Monetized Links and send the post back to you!\n\n💸 <b>2. Refer & Earn</b>\nInvite your friends and earn a lifetime commission from their earnings.\n\n⚡ <b>3. Fast Withdrawals</b>\nWithdraw your earnings instantly to your preferred wallet directly from the Mini App.\n\n👇 <i>Click the button below to get started!</i>`;
+                const replyMarkup = { inline_keyboard: [[{ text: currentSettings?.button_text || "🚀 Open Dashboard", url: `https://t.me/teleEarnLinkbot/${APP_SHORT_NAME}`, style: currentSettings?.button_color || "primary" }]] };
+                await tgAPI('sendMessage', { chat_id: chatId, text: helpMsg, parse_mode: 'HTML', reply_markup: replyMarkup });
+                return res.status(200).send('OK');
+            }
+
             if (isAdmin && text === '/admin') {
-                const adminMenu = `🎛 <b>teleEarn Master Admin Panel</b>\n\nConfigure Welcome Screen & Link Converter:`;
-                await tgAPI('sendMessage', { chat_id: chatId, text: adminMenu, parse_mode: 'HTML', reply_markup: mainAdminMenu });
+                await tgAPI('sendMessage', { chat_id: chatId, text: `🎛 <b>teleEarn Master Admin Panel</b>\n\nConfigure Welcome Screen & Link Converter:`, parse_mode: 'HTML', reply_markup: mainAdminMenu });
                 return res.status(200).send('OK');
             }
 
             // ==========================================
-            // 🔗 AUTO-LINK CONVERTER ENGINE
+            // 🔗 AUTO-LINK CONVERTER ENGINE (PUBLIC & FAST)
             // ==========================================
-            // Find all URLs in the message text using Regex
-            const urlRegex = /(https?:\/\/[^\s]+)/g;
-            const extractedUrls = text.match(urlRegex);
+            if (!text.startsWith('/')) { // Ignore commands
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                const extractedUrls = text.match(urlRegex);
 
-            if (extractedUrls && extractedUrls.length > 0) {
-                
-                // Filter out Telegram Links (ignore them)
-                const validUrls = extractedUrls.filter(url => !url.includes('t.me') && !url.includes('telegram.me') && !url.includes('telegram.dog'));
+                if (extractedUrls && extractedUrls.length > 0) {
+                    const validUrls = extractedUrls.filter(url => !url.includes('t.me') && !url.includes('telegram.me') && !url.includes('telegram.dog'));
 
-                if (validUrls.length > 0) {
-                    
-                    // 1. Get User ID from Supabase (Create if doesn't exist)
-                    let { data: userData } = await supabase.from('users').select('id').eq('telegram_id', chatId).single();
-                    if (!userData) {
-                        const { data: newUser } = await supabase.from('users').insert([{ telegram_id: chatId, first_name: msg.chat.first_name, username: msg.chat.username }]).select().single();
-                        userData = newUser;
-                    }
+                    if (validUrls.length > 0) {
+                        // Premium Action: Show Typing/Uploading
+                        const actionType = msg.photo ? 'upload_photo' : (msg.video ? 'upload_video' : 'typing');
+                        await tgAPI('sendChatAction', { chat_id: chatId, action: actionType });
 
-                    // 2. Generate short links for all valid URLs
-                    let convertedLinksText = '';
-                    for (const url of validUrls) {
-                        const shortId = Math.random().toString(36).substring(2, 8);
-                        await supabase.from('links').insert([{ original_url: url, short_id: shortId, user_id: userData.id }]);
-                        const teleEarnUrl = `https://t.me/teleEarnLinkbot/httpsteleearnlinksvercelapp?startapp=link_${shortId}`;
-                        convertedLinksText += `🔗 ${teleEarnUrl}\n`;
-                    }
+                        // 1. User DB Check
+                        let { data: userData } = await supabase.from('users').select('id').eq('telegram_id', chatId).single();
+                        if (!userData) {
+                            const { data: newUser } = await supabase.from('users').insert([{ telegram_id: chatId, first_name: msg.chat.first_name, username: msg.chat.username }]).select().single();
+                            userData = newUser;
+                        }
 
-                    // 3. Build Final Caption (Header + Links + Footer)
-                    const header = currentSettings?.converter_header ? `${currentSettings.converter_header}\n\n` : `🔥 <b>New Exclusive Content!</b> 🔥\n\n`;
-                    const footer = currentSettings?.converter_footer ? `\n\n${currentSettings.converter_footer}` : `\n\n<i>Powered by teleEarn</i>`;
-                    
-                    const finalCaption = `${header}${convertedLinksText}${footer}`;
+                        // 2. ⚡ LIGHTNING FAST BATCH INSERT
+                        const linksToInsert = validUrls.map(url => ({
+                            original_url: url,
+                            short_id: Math.random().toString(36).substring(2, 8),
+                            user_id: userData.id
+                        }));
+                        await supabase.from('links').insert(linksToInsert);
 
-                    // 4. Send Back the same Media with New Caption
-                    if (msg.photo) {
-                        const fileId = msg.photo[msg.photo.length - 1].file_id;
-                        await tgAPI('sendPhoto', { chat_id: chatId, photo: fileId, caption: finalCaption, parse_mode: 'HTML' });
-                    } 
-                    else if (msg.video) {
-                        await tgAPI('sendVideo', { chat_id: chatId, video: msg.video.file_id, caption: finalCaption, parse_mode: 'HTML' });
-                    } 
-                    else if (msg.animation) {
-                        await tgAPI('sendAnimation', { chat_id: chatId, animation: msg.animation.file_id, caption: finalCaption, parse_mode: 'HTML' });
-                    } 
-                    else if (msg.document) {
-                        await tgAPI('sendDocument', { chat_id: chatId, document: msg.document.file_id, caption: finalCaption, parse_mode: 'HTML' });
-                    }
-                    else {
-                        // It was just a text message
-                        await tgAPI('sendMessage', { chat_id: chatId, text: finalCaption, parse_mode: 'HTML', disable_web_page_preview: true });
+                        // 3. 📏 BUILD SPACED TEXT (Gap between links)
+                        let convertedLinksText = '';
+                        linksToInsert.forEach(link => {
+                            const teleEarnUrl = `https://t.me/teleEarnLinkbot/${APP_SHORT_NAME}?startapp=link_${link.short_id}`;
+                            convertedLinksText += `🔗 ${teleEarnUrl}\n\n`; // Double newline for proper GAP
+                        });
+
+                        // 4. Header + Links + Footer
+                        const header = currentSettings?.converter_header ? `${currentSettings.converter_header}\n\n` : ``;
+                        const footer = currentSettings?.converter_footer ? `\n${currentSettings.converter_footer}` : ``;
+                        const finalCaption = `${header}${convertedLinksText}${footer}`;
+
+                        // 5. Send Back Format
+                        if (msg.photo) {
+                            await tgAPI('sendPhoto', { chat_id: chatId, photo: msg.photo[msg.photo.length - 1].file_id, caption: finalCaption, parse_mode: 'HTML' });
+                        } else if (msg.video) {
+                            await tgAPI('sendVideo', { chat_id: chatId, video: msg.video.file_id, caption: finalCaption, parse_mode: 'HTML' });
+                        } else if (msg.animation) {
+                            await tgAPI('sendAnimation', { chat_id: chatId, animation: msg.animation.file_id, caption: finalCaption, parse_mode: 'HTML' });
+                        } else {
+                            await tgAPI('sendMessage', { chat_id: chatId, text: finalCaption, parse_mode: 'HTML', disable_web_page_preview: true });
+                        }
                     }
                 }
             }
