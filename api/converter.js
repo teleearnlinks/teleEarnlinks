@@ -55,13 +55,21 @@ export default async function handler(req, res) {
             await tgAPI('answerCallbackQuery', { callback_query_id: query.id });
             let user = await getOrCreateUser(chatId, query.message);
 
+            // Handle State Setting with Error Catcher
+            const setState = async (stateVal, msgText) => {
+                const { error } = await supabase.from('users').update({ current_action: stateVal }).eq('id', user.id);
+                if (error) {
+                    await tgAPI('sendMessage', { chat_id: chatId, text: `⚠️ <b>Database Error:</b> Column 'current_action' is missing!\nGo to Supabase SQL Editor and run:\n<code>ALTER TABLE users ADD COLUMN current_action TEXT DEFAULT '';</code>`, parse_mode: 'HTML' });
+                } else {
+                    await tgAPI('sendMessage', { chat_id: chatId, text: msgText, parse_mode: 'HTML' });
+                }
+            };
+
             if (data === 'set_header') {
-                await supabase.from('users').update({ current_action: 'set_header' }).eq('id', user.id);
-                await tgAPI('sendMessage', { chat_id: chatId, text: `🔝 <b>Header Setup</b>\n\nSend your new Header text below.\n<i>(Send /cancel to abort)</i>`, parse_mode: 'HTML' });
+                await setState('set_header', `🔝 <b>Header Setup</b>\n\nJust send your new Header text normally below.\n<i>(Send /cancel to abort)</i>`);
             } 
             else if (data === 'set_footer') {
-                await supabase.from('users').update({ current_action: 'set_footer' }).eq('id', user.id);
-                await tgAPI('sendMessage', { chat_id: chatId, text: `🔚 <b>Footer Setup</b>\n\nSend your new Footer text below.\n<i>(Send /cancel to abort)</i>`, parse_mode: 'HTML' });
+                await setState('set_footer', `🔚 <b>Footer Setup</b>\n\nJust send your new Footer text normally below.\n<i>(Send /cancel to abort)</i>`);
             } 
             else if (data === 'toggle_text') {
                 const newState = !user.keep_text;
@@ -95,7 +103,7 @@ export default async function handler(req, res) {
             let text = msg.text || msg.caption || '';
             let user = await getOrCreateUser(chatId, msg);
 
-            // 🟢 EMERGENCY ESCAPE / RESET COMMANDS (Fixes the stuck bot issue)
+            // 🟢 EMERGENCY ESCAPE / RESET
             if (text === '/start' || text === '/help' || text === '/cancel') {
                 if (user.current_action) {
                     await supabase.from('users').update({ current_action: '' }).eq('id', user.id);
@@ -111,18 +119,18 @@ export default async function handler(req, res) {
                 return res.status(200).send('OK');
             }
 
-            // 🟢 ACTION STATE HANDLER (Saving Header/Footer)
+            // 🟢 ZERO-LAG STATE HANDLER (No Swipe Left required!)
             if (user.current_action) {
                 try {
                     let actionMsg = "";
                     if (user.current_action === 'set_header') {
                         await supabase.from('users').update({ converter_header: text, current_action: '' }).eq('id', user.id);
                         user.converter_header = text;
-                        actionMsg = "✅ <b>Header Saved!</b>";
+                        actionMsg = "✅ <b>Header Saved Successfully!</b>";
                     } else if (user.current_action === 'set_footer') {
                         await supabase.from('users').update({ converter_footer: text, current_action: '' }).eq('id', user.id);
                         user.converter_footer = text;
-                        actionMsg = "✅ <b>Footer Saved!</b>";
+                        actionMsg = "✅ <b>Footer Saved Successfully!</b>";
                     }
                     await tgAPI('sendMessage', { chat_id: chatId, text: actionMsg, parse_mode: 'HTML', reply_markup: getMenu(user) });
                 } catch (err) {
@@ -164,7 +172,7 @@ export default async function handler(req, res) {
 
                         let finalCaption = '';
                         if (user.keep_text) {
-                            // HTML tags safe parsing (prevents telegram crash if user sends weird text)
+                            // Safe parsing
                             let safeOriginalText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
                             validUrls.forEach((oldUrl, index) => {
                                 const newUrl = `https://t.me/${MAIN_BOT_USERNAME}/${APP_SHORT_NAME}?startapp=link_${linksToInsert[index].short_id}`;
@@ -175,23 +183,17 @@ export default async function handler(req, res) {
                             finalCaption = `${head}${convertedLinksText.trim()}\n${foot}`;
                         }
 
-                        let tgRes;
-                        if (msg.photo) tgRes = await tgAPI('sendPhoto', { chat_id: chatId, photo: msg.photo[msg.photo.length - 1].file_id, caption: finalCaption, parse_mode: 'HTML' });
-                        else if (msg.video) tgRes = await tgAPI('sendVideo', { chat_id: chatId, video: msg.video.file_id, caption: finalCaption, parse_mode: 'HTML' });
-                        else if (msg.animation) tgRes = await tgAPI('sendAnimation', { chat_id: chatId, animation: msg.animation.file_id, caption: finalCaption, parse_mode: 'HTML' });
-                        else tgRes = await tgAPI('sendMessage', { chat_id: chatId, text: finalCaption, parse_mode: 'HTML', disable_web_page_preview: true });
-
-                        // 🛑 CATCH TELEGRAM FORMATTING ERRORS
-                        if (!tgRes.ok) {
-                            await tgAPI('sendMessage', { chat_id: chatId, text: `❌ <b>Formatting Error</b>\nTelegram rejected the message! Please ensure your Header/Footer doesn't have broken HTML tags (like unclosed <b>).\n\n<i>Error detail: ${tgRes.description}</i>`, parse_mode: 'HTML' });
-                        }
+                        if (msg.photo) await tgAPI('sendPhoto', { chat_id: chatId, photo: msg.photo[msg.photo.length - 1].file_id, caption: finalCaption, parse_mode: 'HTML' });
+                        else if (msg.video) await tgAPI('sendVideo', { chat_id: chatId, video: msg.video.file_id, caption: finalCaption, parse_mode: 'HTML' });
+                        else if (msg.animation) await tgAPI('sendAnimation', { chat_id: chatId, animation: msg.animation.file_id, caption: finalCaption, parse_mode: 'HTML' });
+                        else await tgAPI('sendMessage', { chat_id: chatId, text: finalCaption, parse_mode: 'HTML', disable_web_page_preview: true });
                     }
                 }
             }
         }
         res.status(200).send('OK');
     } catch (error) { 
-        console.error('CONVERTER ERROR:', error);
+        console.error(error);
         res.status(200).send('Error'); 
     }
 }
