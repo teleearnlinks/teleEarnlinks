@@ -1,16 +1,14 @@
 const { createClient } = require('@supabase/supabase-js');
 
 export default async function handler(req, res) {
-    if (req.method === 'GET') return res.status(200).send('Premium Converter Bot Active!');
+    if (req.method === 'GET') return res.status(200).send('Converter Bot Active!');
 
     try {
         const BOT_TOKEN = process.env.CONVERTER_BOT_TOKEN; 
         const SUPABASE_URL = process.env.SUPABASE_URL;
         const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
-        
-        // 🔗 Aapka Direct Mini App Name
-        const APP_SHORT_NAME = 'httpsteleearnlinksvercelapp'; 
         const MAIN_BOT_USERNAME = 'teleEarnLinkbot'; 
+        const APP_SHORT_NAME = 'httpsteleearnlinksvercelapp'; 
 
         if (!BOT_TOKEN || !SUPABASE_URL || !SUPABASE_KEY) return res.status(200).send('Env missing');
 
@@ -19,13 +17,9 @@ export default async function handler(req, res) {
         const supabase = createClient(cleanUrl, SUPABASE_KEY.trim());
 
         const tgAPI = async (method, body) => {
-            const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
-            });
-            return await response.json();
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         };
 
-        // UI Dashboard Menu Generator (Jisme Custom Emojis support honge)
         const getMenu = (user) => {
             return {
                 inline_keyboard: [
@@ -37,8 +31,17 @@ export default async function handler(req, res) {
             };
         };
 
+        const getOrCreateUser = async (chatId, msg) => {
+            let { data: user } = await supabase.from('users').select('*').eq('telegram_id', chatId).maybeSingle();
+            if (!user) {
+                const { data: newUser } = await supabase.from('users').insert([{ telegram_id: chatId, first_name: msg?.chat?.first_name || 'User', username: msg?.chat?.username || '' }]).select().maybeSingle();
+                user = newUser;
+            }
+            return user;
+        };
+
         // ==========================================
-        // 1️⃣ INTERACTIVE DASHBOARD (BUTTON CLICKS)
+        // 🟢 BUTTON CLICKS
         // ==========================================
         if (update.callback_query) {
             const query = update.callback_query;
@@ -47,16 +50,15 @@ export default async function handler(req, res) {
             const data = query.data;
 
             await tgAPI('answerCallbackQuery', { callback_query_id: query.id });
-
-            // FIX: .maybeSingle() laga diya hai taaki naya user aane pe bot crash na ho!
-            let { data: user } = await supabase.from('users').select('*').eq('telegram_id', chatId).maybeSingle();
-            if (!user) return res.status(200).send('OK');
+            const user = await getOrCreateUser(chatId, query.message);
 
             if (data === 'set_header') {
-                await tgAPI('sendMessage', { chat_id: chatId, text: `🔝 <b>Header Setup</b>\n\n📌 <b>Reply to this exact message (Swipe Left)</b> with your Header text.`, parse_mode: 'HTML', reply_markup: { force_reply: true } });
+                await supabase.from('users').update({ current_action: 'set_header' }).eq('id', user.id);
+                await tgAPI('sendMessage', { chat_id: chatId, text: `🔝 <b>Header Setup</b>\n\nSend your new Header text below:`, parse_mode: 'HTML' });
             } 
             else if (data === 'set_footer') {
-                await tgAPI('sendMessage', { chat_id: chatId, text: `🔚 <b>Footer Setup</b>\n\n📌 <b>Reply to this exact message (Swipe Left)</b> with your Footer text.`, parse_mode: 'HTML', reply_markup: { force_reply: true } });
+                await supabase.from('users').update({ current_action: 'set_footer' }).eq('id', user.id);
+                await tgAPI('sendMessage', { chat_id: chatId, text: `🔚 <b>Footer Setup</b>\n\nSend your new Footer text below:`, parse_mode: 'HTML' });
             } 
             else if (data === 'toggle_text') {
                 const newState = !user.keep_text;
@@ -71,50 +73,41 @@ export default async function handler(req, res) {
                 await tgAPI('editMessageReplyMarkup', { chat_id: chatId, message_id: msgId, reply_markup: getMenu(user) });
             } 
             else if (data === 'clear_settings') {
-                await supabase.from('users').update({ converter_header: '', converter_footer: '', keep_text: false, bold_text: false }).eq('id', user.id);
-                user = { ...user, converter_header: '', converter_footer: '', keep_text: false, bold_text: false };
+                await supabase.from('users').update({ converter_header: '', converter_footer: '', keep_text: false, bold_text: false, current_action: '' }).eq('id', user.id);
+                user = { ...user, converter_header: '', converter_footer: '', keep_text: false, bold_text: false, current_action: '' };
                 await tgAPI('editMessageText', { chat_id: chatId, message_id: msgId, text: `✅ <b>Settings Cleared!</b>\n\nConfigure your converter below:`, parse_mode: 'HTML', reply_markup: getMenu(user) });
             }
             else if (data === 'help_convert') {
-                await tgAPI('sendMessage', { chat_id: chatId, text: `💡 <b>How to Convert Links?</b>\n\nIt's simple! You don't need any command.\n\nJust <b>Forward</b> or <b>Send</b> me any post containing external links (like Terabox, DiskWala, etc.). I will instantly extract them, convert them into your Monetized links, and send the post back to you! 🚀`, parse_mode: 'HTML' });
+                await tgAPI('sendMessage', { chat_id: chatId, text: `💡 <b>How to Convert Links?</b>\n\nJust <b>Forward</b> or <b>Send</b> me any post containing external links. I will instantly extract them, convert them into your Monetized links, and send the post back to you! 🚀`, parse_mode: 'HTML' });
             }
             return res.status(200).send('OK');
         }
 
         // ==========================================
-        // 2️⃣ MESSAGES & LINK CONVERTER ENGINE
+        // 🟢 MESSAGES & LINK CONVERTER ENGINE
         // ==========================================
         if (update && update.message) {
             const msg = update.message;
             const chatId = msg.chat.id;
             let text = msg.text || msg.caption || '';
+            const user = await getOrCreateUser(chatId, msg);
 
-            // 1. Get or Create User (BUG FIXED YAHAN BHI)
-            let { data: user } = await supabase.from('users').select('*').eq('telegram_id', chatId).maybeSingle();
-            if (!user) {
-                const { data: newUser } = await supabase.from('users').insert([{ telegram_id: chatId, first_name: msg.chat.first_name || 'User', username: msg.chat.username || '' }]).select().maybeSingle();
-                user = newUser;
-            }
-
-            // 🟢 FORCE REPLIES (Saving Header/Footer - Custom Emojis Allowed!)
-            if (msg.reply_to_message) {
-                const replyText = msg.reply_to_message.text || '';
-                if (replyText.includes("Header Setup")) {
-                    await supabase.from('users').update({ converter_header: text }).eq('id', user.id);
+            // ✅ NO MORE FORCE REPLY: Check state and save
+            if (user.current_action) {
+                if (user.current_action === 'set_header') {
+                    await supabase.from('users').update({ converter_header: text, current_action: '' }).eq('id', user.id);
                     user.converter_header = text;
                     await tgAPI('sendMessage', { chat_id: chatId, text: `✅ <b>Header Saved!</b>`, parse_mode: 'HTML', reply_markup: getMenu(user) });
-                    return res.status(200).send('OK');
-                }
-                if (replyText.includes("Footer Setup")) {
-                    await supabase.from('users').update({ converter_footer: text }).eq('id', user.id);
+                } else if (user.current_action === 'set_footer') {
+                    await supabase.from('users').update({ converter_footer: text, current_action: '' }).eq('id', user.id);
                     user.converter_footer = text;
                     await tgAPI('sendMessage', { chat_id: chatId, text: `✅ <b>Footer Saved!</b>`, parse_mode: 'HTML', reply_markup: getMenu(user) });
-                    return res.status(200).send('OK');
                 }
+                return res.status(200).send('OK');
             }
 
-            // 🟢 /START COMMAND (Aesthetic Dashboard)
             if (text === '/start' || text === '/help') {
+                await supabase.from('users').update({ current_action: '' }).eq('id', user.id);
                 const welcomeText = `⚙️ <b>teleEarn Link Converter</b>\n━━━━━━━━━━━━━━━━━━━━\nSend me any post with external links, and I will magically replace them with your Monetized Links! ✨\n\n👇 <b>Customize your post format below:</b>`;
                 await tgAPI('sendMessage', { chat_id: chatId, text: welcomeText, parse_mode: 'HTML', reply_markup: getMenu(user) });
                 return res.status(200).send('OK');
@@ -126,14 +119,12 @@ export default async function handler(req, res) {
                 const extractedUrls = text.match(urlRegex);
 
                 if (extractedUrls && extractedUrls.length > 0) {
-                    // Ignore telegram links
                     const validUrls = extractedUrls.filter(url => !url.includes('t.me') && !url.includes('telegram.me') && !url.includes('telegram.dog'));
 
                     if (validUrls.length > 0) {
                         const actionType = msg.photo ? 'upload_photo' : (msg.video ? 'upload_video' : 'typing');
                         await tgAPI('sendChatAction', { chat_id: chatId, action: actionType });
 
-                        // Batch Insert
                         const linksToInsert = validUrls.map(url => ({
                             original_url: url,
                             short_id: Math.random().toString(36).substring(2, 8),
@@ -141,13 +132,11 @@ export default async function handler(req, res) {
                         }));
                         await supabase.from('links').insert(linksToInsert);
 
-                        // Generate Links (With perfect GAP between them)
                         let convertedLinksText = '';
                         linksToInsert.forEach(link => {
                             convertedLinksText += `🔗 https://t.me/${MAIN_BOT_USERNAME}/${APP_SHORT_NAME}?startapp=link_${link.short_id}\n\n`;
                         });
 
-                        // Apply Header & Footer
                         let head = user.converter_header ? `${user.converter_header}\n\n` : ``;
                         let foot = user.converter_footer ? `\n${user.converter_footer}` : ``;
                         if (user.bold_text) {
@@ -167,7 +156,6 @@ export default async function handler(req, res) {
                             finalCaption = `${head}${convertedLinksText.trim()}\n${foot}`;
                         }
 
-                        // Send back Final Post
                         if (msg.photo) await tgAPI('sendPhoto', { chat_id: chatId, photo: msg.photo[msg.photo.length - 1].file_id, caption: finalCaption, parse_mode: 'HTML' });
                         else if (msg.video) await tgAPI('sendVideo', { chat_id: chatId, video: msg.video.file_id, caption: finalCaption, parse_mode: 'HTML' });
                         else if (msg.animation) await tgAPI('sendAnimation', { chat_id: chatId, animation: msg.animation.file_id, caption: finalCaption, parse_mode: 'HTML' });
@@ -177,8 +165,5 @@ export default async function handler(req, res) {
             }
         }
         res.status(200).send('OK');
-    } catch (error) { 
-        console.error('CONVERTER ERROR:', error);
-        res.status(200).send('Error'); 
-    }
+    } catch (error) { res.status(200).send('Error'); }
 }
