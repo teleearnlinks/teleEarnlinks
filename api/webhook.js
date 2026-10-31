@@ -42,6 +42,7 @@ export default async function handler(req, res) {
         };
         const backBtn = { inline_keyboard: [[{ text: "⬅️ Back", callback_data: "admin_home" }]] };
 
+        // 🟢 BUTTON CLICKS
         if (update.callback_query) {
             const query = update.callback_query;
             const chatId = query.message.chat.id;
@@ -52,22 +53,22 @@ export default async function handler(req, res) {
 
             const user = await getOrCreateUser(chatId, query.message);
 
+            const setState = async (stateVal, msgText) => {
+                const { error } = await supabase.from('users').update({ current_action: stateVal }).eq('id', user.id);
+                if (error) {
+                    await tgAPI('sendMessage', { chat_id: chatId, text: `⚠️ <b>Database Error:</b> Column 'current_action' is missing!\nGo to Supabase SQL Editor and run:\n<code>ALTER TABLE users ADD COLUMN current_action TEXT DEFAULT '';</code>`, parse_mode: 'HTML' });
+                } else {
+                    await tgAPI('sendMessage', { chat_id: chatId, text: msgText, parse_mode: 'HTML' });
+                }
+            };
+
             if (data === 'admin_home') {
                  await supabase.from('users').update({ current_action: '' }).eq('id', user.id);
                  await tgAPI('editMessageText', { chat_id: chatId, message_id: query.message.message_id, text: `🎛 <b>teleEarn Main Admin Panel</b>`, parse_mode: 'HTML', reply_markup: mainAdminMenu });
             } 
-            else if (data === 'edit_text') {
-                await supabase.from('users').update({ current_action: 'edit_text' }).eq('id', user.id);
-                await tgAPI('sendMessage', { chat_id: chatId, text: `📝 <b>Send your new Welcome Text below:</b>\n<i>(Send /cancel to abort)</i>`, parse_mode: 'HTML' });
-            } 
-            else if (data === 'edit_media') {
-                await supabase.from('users').update({ current_action: 'edit_media' }).eq('id', user.id);
-                await tgAPI('sendMessage', { chat_id: chatId, text: `📸 <b>Send a new Photo or Video below:</b>\n<i>(Send /cancel to abort)</i>`, parse_mode: 'HTML' });
-            } 
-            else if (data === 'edit_btn') {
-                await supabase.from('users').update({ current_action: 'edit_btn' }).eq('id', user.id);
-                await tgAPI('sendMessage', { chat_id: chatId, text: `🔘 <b>Send your new Button Text below:</b>\n<i>(Send /cancel to abort)</i>`, parse_mode: 'HTML' });
-            }
+            else if (data === 'edit_text') await setState('main_edit_text', `📝 <b>Welcome Text Setup</b>\n\nSend your new Welcome Text below.\n<i>(Send /cancel to abort)</i>`);
+            else if (data === 'edit_media') await setState('main_edit_media', `📸 <b>Media Setup</b>\n\nSend a Photo or Video below.\n<i>(Send /cancel to abort)</i>`);
+            else if (data === 'edit_btn') await setState('main_edit_btn', `🔘 <b>Button Setup</b>\n\nSend your new Button Text below.\n<i>(Send /cancel to abort)</i>`);
             else if (data === 'edit_color') {
                 await tgAPI('editMessageText', { chat_id: chatId, message_id: query.message.message_id, text: `🎨 Select Button Color:`, parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: "🟦 Blue", callback_data: "set_color_primary" }, { text: "🟩 Green", callback_data: "set_color_success" }, { text: "🟥 Red", callback_data: "set_color_danger" }], [{ text: "⬅️ Back", callback_data: "admin_home" }]] } });
             }
@@ -91,6 +92,7 @@ export default async function handler(req, res) {
             return res.status(200).send('OK');
         }
 
+        // 🟢 MESSAGES & STATE HANDLING
         if (update && update.message) {
             const msg = update.message;
             const chatId = msg.chat.id;
@@ -121,6 +123,7 @@ export default async function handler(req, res) {
                 return res.status(200).send('OK');
             }
 
+            // 🟢 ZERO-LAG STATE HANDLER
             if (isAdmin && user.current_action) {
                 try {
                     const saveToDB = async (obj) => {
@@ -128,10 +131,10 @@ export default async function handler(req, res) {
                         else await supabase.from('settings').insert([{ ...obj, cpm: 2 }]);
                     };
 
-                    if (user.current_action === 'edit_text') {
+                    if (user.current_action === 'main_edit_text') {
                         await saveToDB({ welcome_text: text });
                         await tgAPI('sendMessage', { chat_id: chatId, text: "✅ Text Updated!", parse_mode: 'HTML', reply_markup: backBtn });
-                    } else if (user.current_action === 'edit_media') {
+                    } else if (user.current_action === 'main_edit_media') {
                         let m = msg.photo ? 'photo:'+msg.photo[msg.photo.length-1].file_id : (msg.video ? 'video:'+msg.video.file_id : '');
                         if (m || text.startsWith('http')) {
                             await saveToDB({ welcome_image: m || text });
@@ -139,7 +142,7 @@ export default async function handler(req, res) {
                         } else {
                             await tgAPI('sendMessage', { chat_id: chatId, text: "❌ Invalid Media.", parse_mode: 'HTML', reply_markup: backBtn });
                         }
-                    } else if (user.current_action === 'edit_btn') {
+                    } else if (user.current_action === 'main_edit_btn') {
                         await saveToDB({ button_text: text });
                         await tgAPI('sendMessage', { chat_id: chatId, text: "✅ Button Updated!", parse_mode: 'HTML', reply_markup: backBtn });
                     }
