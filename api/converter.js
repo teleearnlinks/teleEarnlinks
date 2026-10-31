@@ -1,14 +1,14 @@
 const { createClient } = require('@supabase/supabase-js');
 
 export default async function handler(req, res) {
-    if (req.method === 'GET') return res.status(200).send('Converter Bot Active!');
+    if (req.method === 'GET') return res.status(200).send('Premium Converter Bot Active!');
 
     try {
         const BOT_TOKEN = process.env.CONVERTER_BOT_TOKEN; 
         const SUPABASE_URL = process.env.SUPABASE_URL;
         const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
-        const MAIN_BOT_USERNAME = 'teleEarnLinkbot'; 
         const APP_SHORT_NAME = 'httpsteleearnlinksvercelapp'; 
+        const MAIN_BOT_USERNAME = 'teleEarnLinkbot'; 
 
         if (!BOT_TOKEN || !SUPABASE_URL || !SUPABASE_KEY) return res.status(200).send('Env missing');
 
@@ -17,7 +17,10 @@ export default async function handler(req, res) {
         const supabase = createClient(cleanUrl, SUPABASE_KEY.trim());
 
         const tgAPI = async (method, body) => {
-            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            });
+            return await response.json();
         };
 
         const getMenu = (user) => {
@@ -41,7 +44,7 @@ export default async function handler(req, res) {
         };
 
         // ==========================================
-        // 🟢 BUTTON CLICKS
+        // 1️⃣ INTERACTIVE DASHBOARD (BUTTON CLICKS)
         // ==========================================
         if (update.callback_query) {
             const query = update.callback_query;
@@ -50,15 +53,15 @@ export default async function handler(req, res) {
             const data = query.data;
 
             await tgAPI('answerCallbackQuery', { callback_query_id: query.id });
-            const user = await getOrCreateUser(chatId, query.message);
+            let user = await getOrCreateUser(chatId, query.message);
 
             if (data === 'set_header') {
                 await supabase.from('users').update({ current_action: 'set_header' }).eq('id', user.id);
-                await tgAPI('sendMessage', { chat_id: chatId, text: `🔝 <b>Header Setup</b>\n\nSend your new Header text below:`, parse_mode: 'HTML' });
+                await tgAPI('sendMessage', { chat_id: chatId, text: `🔝 <b>Header Setup</b>\n\nSend your new Header text below.\n<i>(Send /cancel to abort)</i>`, parse_mode: 'HTML' });
             } 
             else if (data === 'set_footer') {
                 await supabase.from('users').update({ current_action: 'set_footer' }).eq('id', user.id);
-                await tgAPI('sendMessage', { chat_id: chatId, text: `🔚 <b>Footer Setup</b>\n\nSend your new Footer text below:`, parse_mode: 'HTML' });
+                await tgAPI('sendMessage', { chat_id: chatId, text: `🔚 <b>Footer Setup</b>\n\nSend your new Footer text below.\n<i>(Send /cancel to abort)</i>`, parse_mode: 'HTML' });
             } 
             else if (data === 'toggle_text') {
                 const newState = !user.keep_text;
@@ -84,32 +87,47 @@ export default async function handler(req, res) {
         }
 
         // ==========================================
-        // 🟢 MESSAGES & LINK CONVERTER ENGINE
+        // 2️⃣ MESSAGES & LINK CONVERTER ENGINE
         // ==========================================
         if (update && update.message) {
             const msg = update.message;
             const chatId = msg.chat.id;
             let text = msg.text || msg.caption || '';
-            const user = await getOrCreateUser(chatId, msg);
+            let user = await getOrCreateUser(chatId, msg);
 
-            // ✅ NO MORE FORCE REPLY: Check state and save
-            if (user.current_action) {
-                if (user.current_action === 'set_header') {
-                    await supabase.from('users').update({ converter_header: text, current_action: '' }).eq('id', user.id);
-                    user.converter_header = text;
-                    await tgAPI('sendMessage', { chat_id: chatId, text: `✅ <b>Header Saved!</b>`, parse_mode: 'HTML', reply_markup: getMenu(user) });
-                } else if (user.current_action === 'set_footer') {
-                    await supabase.from('users').update({ converter_footer: text, current_action: '' }).eq('id', user.id);
-                    user.converter_footer = text;
-                    await tgAPI('sendMessage', { chat_id: chatId, text: `✅ <b>Footer Saved!</b>`, parse_mode: 'HTML', reply_markup: getMenu(user) });
+            // 🟢 EMERGENCY ESCAPE / RESET COMMANDS (Fixes the stuck bot issue)
+            if (text === '/start' || text === '/help' || text === '/cancel') {
+                if (user.current_action) {
+                    await supabase.from('users').update({ current_action: '' }).eq('id', user.id);
+                    user.current_action = '';
                 }
+                if (text === '/cancel') {
+                    await tgAPI('sendMessage', { chat_id: chatId, text: "❌ <b>Action Cancelled!</b>", parse_mode: 'HTML', reply_markup: getMenu(user) });
+                    return res.status(200).send('OK');
+                }
+                
+                const welcomeText = `⚙️ <b>teleEarn Link Converter</b>\n━━━━━━━━━━━━━━━━━━━━\nSend me any post with external links, and I will magically replace them with your Monetized Links! ✨\n\n👇 <b>Customize your post format below:</b>`;
+                await tgAPI('sendMessage', { chat_id: chatId, text: welcomeText, parse_mode: 'HTML', reply_markup: getMenu(user) });
                 return res.status(200).send('OK');
             }
 
-            if (text === '/start' || text === '/help') {
-                await supabase.from('users').update({ current_action: '' }).eq('id', user.id);
-                const welcomeText = `⚙️ <b>teleEarn Link Converter</b>\n━━━━━━━━━━━━━━━━━━━━\nSend me any post with external links, and I will magically replace them with your Monetized Links! ✨\n\n👇 <b>Customize your post format below:</b>`;
-                await tgAPI('sendMessage', { chat_id: chatId, text: welcomeText, parse_mode: 'HTML', reply_markup: getMenu(user) });
+            // 🟢 ACTION STATE HANDLER (Saving Header/Footer)
+            if (user.current_action) {
+                try {
+                    let actionMsg = "";
+                    if (user.current_action === 'set_header') {
+                        await supabase.from('users').update({ converter_header: text, current_action: '' }).eq('id', user.id);
+                        user.converter_header = text;
+                        actionMsg = "✅ <b>Header Saved!</b>";
+                    } else if (user.current_action === 'set_footer') {
+                        await supabase.from('users').update({ converter_footer: text, current_action: '' }).eq('id', user.id);
+                        user.converter_footer = text;
+                        actionMsg = "✅ <b>Footer Saved!</b>";
+                    }
+                    await tgAPI('sendMessage', { chat_id: chatId, text: actionMsg, parse_mode: 'HTML', reply_markup: getMenu(user) });
+                } catch (err) {
+                    await tgAPI('sendMessage', { chat_id: chatId, text: `❌ DB Error: ${err.message}` });
+                }
                 return res.status(200).send('OK');
             }
 
@@ -146,24 +164,34 @@ export default async function handler(req, res) {
 
                         let finalCaption = '';
                         if (user.keep_text) {
-                            let newOriginalText = text;
+                            // HTML tags safe parsing (prevents telegram crash if user sends weird text)
+                            let safeOriginalText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
                             validUrls.forEach((oldUrl, index) => {
                                 const newUrl = `https://t.me/${MAIN_BOT_USERNAME}/${APP_SHORT_NAME}?startapp=link_${linksToInsert[index].short_id}`;
-                                newOriginalText = newOriginalText.replace(oldUrl, newUrl);
+                                safeOriginalText = safeOriginalText.replace(oldUrl, newUrl);
                             });
-                            finalCaption = `${head}${newOriginalText}\n${foot}`;
+                            finalCaption = `${head}${safeOriginalText}\n${foot}`;
                         } else {
                             finalCaption = `${head}${convertedLinksText.trim()}\n${foot}`;
                         }
 
-                        if (msg.photo) await tgAPI('sendPhoto', { chat_id: chatId, photo: msg.photo[msg.photo.length - 1].file_id, caption: finalCaption, parse_mode: 'HTML' });
-                        else if (msg.video) await tgAPI('sendVideo', { chat_id: chatId, video: msg.video.file_id, caption: finalCaption, parse_mode: 'HTML' });
-                        else if (msg.animation) await tgAPI('sendAnimation', { chat_id: chatId, animation: msg.animation.file_id, caption: finalCaption, parse_mode: 'HTML' });
-                        else await tgAPI('sendMessage', { chat_id: chatId, text: finalCaption, parse_mode: 'HTML', disable_web_page_preview: true });
+                        let tgRes;
+                        if (msg.photo) tgRes = await tgAPI('sendPhoto', { chat_id: chatId, photo: msg.photo[msg.photo.length - 1].file_id, caption: finalCaption, parse_mode: 'HTML' });
+                        else if (msg.video) tgRes = await tgAPI('sendVideo', { chat_id: chatId, video: msg.video.file_id, caption: finalCaption, parse_mode: 'HTML' });
+                        else if (msg.animation) tgRes = await tgAPI('sendAnimation', { chat_id: chatId, animation: msg.animation.file_id, caption: finalCaption, parse_mode: 'HTML' });
+                        else tgRes = await tgAPI('sendMessage', { chat_id: chatId, text: finalCaption, parse_mode: 'HTML', disable_web_page_preview: true });
+
+                        // 🛑 CATCH TELEGRAM FORMATTING ERRORS
+                        if (!tgRes.ok) {
+                            await tgAPI('sendMessage', { chat_id: chatId, text: `❌ <b>Formatting Error</b>\nTelegram rejected the message! Please ensure your Header/Footer doesn't have broken HTML tags (like unclosed <b>).\n\n<i>Error detail: ${tgRes.description}</i>`, parse_mode: 'HTML' });
+                        }
                     }
                 }
             }
         }
         res.status(200).send('OK');
-    } catch (error) { res.status(200).send('Error'); }
+    } catch (error) { 
+        console.error('CONVERTER ERROR:', error);
+        res.status(200).send('Error'); 
+    }
 }
