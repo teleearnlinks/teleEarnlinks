@@ -1,14 +1,16 @@
 const { createClient } = require('@supabase/supabase-js');
 
 export default async function handler(req, res) {
-    if (req.method === 'GET') return res.status(200).send('Main Bot Webhook Active!');
+    if (req.method === 'GET') return res.status(200).send('Premium Converter Bot Active!');
 
     try {
-        const BOT_TOKEN = process.env.BOT_TOKEN;
+        const BOT_TOKEN = process.env.CONVERTER_BOT_TOKEN; 
         const SUPABASE_URL = process.env.SUPABASE_URL;
         const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
-        const ADMIN_ID = parseInt(process.env.ADMIN_ID); 
+        
+        // 🔗 Aapka Direct Mini App Name
         const APP_SHORT_NAME = 'httpsteleearnlinksvercelapp'; 
+        const MAIN_BOT_USERNAME = 'teleEarnLinkbot'; 
 
         if (!BOT_TOKEN || !SUPABASE_URL || !SUPABASE_KEY) return res.status(200).send('Env missing');
 
@@ -17,94 +19,166 @@ export default async function handler(req, res) {
         const supabase = createClient(cleanUrl, SUPABASE_KEY.trim());
 
         const tgAPI = async (method, body) => {
-            const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            });
             return await response.json();
         };
 
-        const { data: currentSettings } = await supabase.from('settings').select('*').limit(1).maybeSingle();
-        const settingsId = currentSettings ? currentSettings.id : null;
+        // UI Dashboard Menu Generator (Jisme Custom Emojis support honge)
+        const getMenu = (user) => {
+            return {
+                inline_keyboard: [
+                    [{ text: "🔝 Set Header", callback_data: "set_header" }, { text: "🔚 Set Footer", callback_data: "set_footer" }],
+                    [{ text: `📝 Keep Original Text: ${user.keep_text ? "ON ✅" : "OFF ❌"}`, callback_data: "toggle_text" }],
+                    [{ text: `🔠 Bold Header/Footer: ${user.bold_text ? "ON ✅" : "OFF ❌"}`, callback_data: "toggle_bold" }],
+                    [{ text: "❓ How to Convert", callback_data: "help_convert" }, { text: "🗑 Clear Settings", callback_data: "clear_settings" }]
+                ]
+            };
+        };
 
-        // 🟢 ADMIN PANEL CALLBACKS
+        // ==========================================
+        // 1️⃣ INTERACTIVE DASHBOARD (BUTTON CLICKS)
+        // ==========================================
         if (update.callback_query) {
             const query = update.callback_query;
             const chatId = query.message.chat.id;
+            const msgId = query.message.message_id;
             const data = query.data;
 
             await tgAPI('answerCallbackQuery', { callback_query_id: query.id });
-            if (chatId !== ADMIN_ID) return res.status(200).send('OK');
 
-            const backBtn = { inline_keyboard: [[{ text: "⬅️ Back", callback_data: "admin_home" }]] };
+            // FIX: .maybeSingle() laga diya hai taaki naya user aane pe bot crash na ho!
+            let { data: user } = await supabase.from('users').select('*').eq('telegram_id', chatId).maybeSingle();
+            if (!user) return res.status(200).send('OK');
 
-            if (data === 'admin_home') {
-                 const menu = { inline_keyboard: [[{ text: "📝 Edit Text", callback_data: "edit_text" }, { text: "📸 Edit Media", callback_data: "edit_media" }], [{ text: "🔘 Edit Button Name", callback_data: "edit_btn" }, { text: "🎨 Edit Button Color", callback_data: "edit_color" }], [{ text: "👁 Preview", callback_data: "preview" }, { text: "🗑 Remove Media", callback_data: "remove_media" }]] };
-                 await tgAPI('editMessageText', { chat_id: chatId, message_id: query.message.message_id, text: `🎛 <b>teleEarn Main Admin Panel</b>`, parse_mode: 'HTML', reply_markup: menu });
+            if (data === 'set_header') {
+                await tgAPI('sendMessage', { chat_id: chatId, text: `🔝 <b>Header Setup</b>\n\n📌 <b>Reply to this exact message (Swipe Left)</b> with your Header text.`, parse_mode: 'HTML', reply_markup: { force_reply: true } });
             } 
-            else if (data === 'edit_text') await tgAPI('sendMessage', { chat_id: chatId, text: `📝 <b>Reply (Swipe Left)</b> with your new welcome text.`, parse_mode: 'HTML', reply_markup: { force_reply: true } });
-            else if (data === 'edit_media') await tgAPI('sendMessage', { chat_id: chatId, text: `📸 <b>Reply (Swipe Left)</b> with a Photo or Video.`, parse_mode: 'HTML', reply_markup: { force_reply: true } });
-            else if (data === 'edit_btn') await tgAPI('sendMessage', { chat_id: chatId, text: `🔘 <b>Reply (Swipe Left)</b> with your new Button Text.`, parse_mode: 'HTML', reply_markup: { force_reply: true } });
-            else if (data === 'edit_color') {
-                await tgAPI('editMessageText', { chat_id: chatId, message_id: query.message.message_id, text: `🎨 Select Button Color:`, parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: "🟦 Blue", callback_data: "set_color_primary" }, { text: "🟩 Green", callback_data: "set_color_success" }, { text: "🟥 Red", callback_data: "set_color_danger" }], [{ text: "⬅️ Back", callback_data: "admin_home" }]] } });
-            }
-            else if (data.startsWith('set_color_')) {
-                const newColor = data.replace('set_color_', '');
-                if (settingsId) await supabase.from('settings').update({ button_color: newColor }).eq('id', settingsId);
-                await tgAPI('editMessageText', { chat_id: chatId, message_id: query.message.message_id, text: `✅ Color set to ${newColor}!`, reply_markup: backBtn });
-            }
-            else if (data === 'remove_media') {
-                if (settingsId) await supabase.from('settings').update({ welcome_image: null }).eq('id', settingsId);
-                await tgAPI('editMessageText', { chat_id: chatId, message_id: query.message.message_id, text: "✅ Media removed!", parse_mode: 'HTML', reply_markup: backBtn });
+            else if (data === 'set_footer') {
+                await tgAPI('sendMessage', { chat_id: chatId, text: `🔚 <b>Footer Setup</b>\n\n📌 <b>Reply to this exact message (Swipe Left)</b> with your Footer text.`, parse_mode: 'HTML', reply_markup: { force_reply: true } });
             } 
-            else if (data === 'preview') {
-                let cap = currentSettings?.welcome_text || `🌟 Welcome!`;
-                let img = currentSettings?.welcome_image || '';
-                // URL ISSUE FIXED HERE:
-                const rm = { inline_keyboard: [[{ text: currentSettings?.button_text || "🚀 Open", url: `https://t.me/teleEarnLinkbot/${APP_SHORT_NAME}`, style: currentSettings?.button_color || "primary" }]] };
-                if (img.startsWith('video:')) await tgAPI('sendVideo', { chat_id: chatId, video: img.replace('video:', ''), caption: cap, parse_mode: 'HTML', reply_markup: rm });
-                else if (img.startsWith('photo:')) await tgAPI('sendPhoto', { chat_id: chatId, photo: img.replace('photo:', ''), caption: cap, parse_mode: 'HTML', reply_markup: rm });
-                else await tgAPI('sendMessage', { chat_id: chatId, text: cap, parse_mode: 'HTML', reply_markup: rm });
+            else if (data === 'toggle_text') {
+                const newState = !user.keep_text;
+                await supabase.from('users').update({ keep_text: newState }).eq('id', user.id);
+                user.keep_text = newState;
+                await tgAPI('editMessageReplyMarkup', { chat_id: chatId, message_id: msgId, reply_markup: getMenu(user) });
+            } 
+            else if (data === 'toggle_bold') {
+                const newState = !user.bold_text;
+                await supabase.from('users').update({ bold_text: newState }).eq('id', user.id);
+                user.bold_text = newState;
+                await tgAPI('editMessageReplyMarkup', { chat_id: chatId, message_id: msgId, reply_markup: getMenu(user) });
+            } 
+            else if (data === 'clear_settings') {
+                await supabase.from('users').update({ converter_header: '', converter_footer: '', keep_text: false, bold_text: false }).eq('id', user.id);
+                user = { ...user, converter_header: '', converter_footer: '', keep_text: false, bold_text: false };
+                await tgAPI('editMessageText', { chat_id: chatId, message_id: msgId, text: `✅ <b>Settings Cleared!</b>\n\nConfigure your converter below:`, parse_mode: 'HTML', reply_markup: getMenu(user) });
+            }
+            else if (data === 'help_convert') {
+                await tgAPI('sendMessage', { chat_id: chatId, text: `💡 <b>How to Convert Links?</b>\n\nIt's simple! You don't need any command.\n\nJust <b>Forward</b> or <b>Send</b> me any post containing external links (like Terabox, DiskWala, etc.). I will instantly extract them, convert them into your Monetized links, and send the post back to you! 🚀`, parse_mode: 'HTML' });
             }
             return res.status(200).send('OK');
         }
 
-        // 🟢 NORMAL MESSAGES
+        // ==========================================
+        // 2️⃣ MESSAGES & LINK CONVERTER ENGINE
+        // ==========================================
         if (update && update.message) {
             const msg = update.message;
             const chatId = msg.chat.id;
-            const text = msg.text || '';
-            const isAdmin = (chatId === ADMIN_ID);
-            const backBtn = { inline_keyboard: [[{ text: "⬅️ Back", callback_data: "admin_home" }]] };
+            let text = msg.text || msg.caption || '';
 
-            if (isAdmin && msg.reply_to_message) {
-                const rt = msg.reply_to_message.text || '';
-                try {
-                    if (rt.includes("Welcome Text Setup")) { await supabase.from('settings').update({ welcome_text: text }).eq('id', settingsId); await tgAPI('sendMessage', { chat_id: chatId, text: "✅ Text Updated!", reply_markup: backBtn }); }
-                    else if (rt.includes("Media Setup")) {
-                        let m = msg.photo ? 'photo:'+msg.photo[msg.photo.length-1].file_id : (msg.video ? 'video:'+msg.video.file_id : '');
-                        if (m) { await supabase.from('settings').update({ welcome_image: m }).eq('id', settingsId); await tgAPI('sendMessage', { chat_id: chatId, text: "✅ Media Updated!", reply_markup: backBtn }); }
-                    }
-                    else if (rt.includes("Button Setup")) { await supabase.from('settings').update({ button_text: text }).eq('id', settingsId); await tgAPI('sendMessage', { chat_id: chatId, text: "✅ Button Updated!", reply_markup: backBtn }); }
-                } catch(e) {}
+            // 1. Get or Create User (BUG FIXED YAHAN BHI)
+            let { data: user } = await supabase.from('users').select('*').eq('telegram_id', chatId).maybeSingle();
+            if (!user) {
+                const { data: newUser } = await supabase.from('users').insert([{ telegram_id: chatId, first_name: msg.chat.first_name || 'User', username: msg.chat.username || '' }]).select().maybeSingle();
+                user = newUser;
+            }
+
+            // 🟢 FORCE REPLIES (Saving Header/Footer - Custom Emojis Allowed!)
+            if (msg.reply_to_message) {
+                const replyText = msg.reply_to_message.text || '';
+                if (replyText.includes("Header Setup")) {
+                    await supabase.from('users').update({ converter_header: text }).eq('id', user.id);
+                    user.converter_header = text;
+                    await tgAPI('sendMessage', { chat_id: chatId, text: `✅ <b>Header Saved!</b>`, parse_mode: 'HTML', reply_markup: getMenu(user) });
+                    return res.status(200).send('OK');
+                }
+                if (replyText.includes("Footer Setup")) {
+                    await supabase.from('users').update({ converter_footer: text }).eq('id', user.id);
+                    user.converter_footer = text;
+                    await tgAPI('sendMessage', { chat_id: chatId, text: `✅ <b>Footer Saved!</b>`, parse_mode: 'HTML', reply_markup: getMenu(user) });
+                    return res.status(200).send('OK');
+                }
+            }
+
+            // 🟢 /START COMMAND (Aesthetic Dashboard)
+            if (text === '/start' || text === '/help') {
+                const welcomeText = `⚙️ <b>teleEarn Link Converter</b>\n━━━━━━━━━━━━━━━━━━━━\nSend me any post with external links, and I will magically replace them with your Monetized Links! ✨\n\n👇 <b>Customize your post format below:</b>`;
+                await tgAPI('sendMessage', { chat_id: chatId, text: welcomeText, parse_mode: 'HTML', reply_markup: getMenu(user) });
                 return res.status(200).send('OK');
             }
 
-            if (text.startsWith('/start')) {
-                const param = text.split(' ')[1] || '';
-                // URL ISSUE FIXED HERE:
-                let finalUrl = `https://t.me/teleEarnLinkbot/${APP_SHORT_NAME}`;
-                if (param) finalUrl += `?startapp=${param}`;
-                
-                let cap = currentSettings?.welcome_text || `🌟 Welcome!`;
-                let img = currentSettings?.welcome_image || '';
-                const rm = { inline_keyboard: [[{ text: currentSettings?.button_text || "🚀 Open", url: finalUrl, style: currentSettings?.button_color || "primary" }]] };
+            // ⚡ FAST LINK CONVERTER ENGINE
+            if (!text.startsWith('/')) {
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                const extractedUrls = text.match(urlRegex);
 
-                if (img.startsWith('video:')) await tgAPI('sendVideo', { chat_id: chatId, video: img.replace('video:', ''), caption: cap, parse_mode: 'HTML', reply_markup: rm });
-                else if (img.startsWith('photo:')) await tgAPI('sendPhoto', { chat_id: chatId, photo: img.replace('photo:', ''), caption: cap, parse_mode: 'HTML', reply_markup: rm });
-                else await tgAPI('sendMessage', { chat_id: chatId, text: cap, parse_mode: 'HTML', reply_markup: rm });
-            }
-            else if (isAdmin && text === '/admin') {
-                await tgAPI('sendMessage', { chat_id: chatId, text: `🎛 <b>Main Admin Panel</b>`, parse_mode: 'HTML', reply_markup: { inline_keyboard: [[{ text: "📝 Edit Text", callback_data: "edit_text" }, { text: "📸 Edit Media", callback_data: "edit_media" }], [{ text: "🔘 Edit Button Name", callback_data: "edit_btn" }, { text: "🎨 Edit Button Color", callback_data: "edit_color" }], [{ text: "👁 Preview", callback_data: "preview" }, { text: "🗑 Remove Media", callback_data: "remove_media" }]] } });
+                if (extractedUrls && extractedUrls.length > 0) {
+                    // Ignore telegram links
+                    const validUrls = extractedUrls.filter(url => !url.includes('t.me') && !url.includes('telegram.me') && !url.includes('telegram.dog'));
+
+                    if (validUrls.length > 0) {
+                        const actionType = msg.photo ? 'upload_photo' : (msg.video ? 'upload_video' : 'typing');
+                        await tgAPI('sendChatAction', { chat_id: chatId, action: actionType });
+
+                        // Batch Insert
+                        const linksToInsert = validUrls.map(url => ({
+                            original_url: url,
+                            short_id: Math.random().toString(36).substring(2, 8),
+                            user_id: user.id
+                        }));
+                        await supabase.from('links').insert(linksToInsert);
+
+                        // Generate Links (With perfect GAP between them)
+                        let convertedLinksText = '';
+                        linksToInsert.forEach(link => {
+                            convertedLinksText += `🔗 https://t.me/${MAIN_BOT_USERNAME}/${APP_SHORT_NAME}?startapp=link_${link.short_id}\n\n`;
+                        });
+
+                        // Apply Header & Footer
+                        let head = user.converter_header ? `${user.converter_header}\n\n` : ``;
+                        let foot = user.converter_footer ? `\n${user.converter_footer}` : ``;
+                        if (user.bold_text) {
+                            if (head) head = `<b>${head.trim()}</b>\n\n`;
+                            if (foot) foot = `\n<b>${foot.trim()}</b>`;
+                        }
+
+                        let finalCaption = '';
+                        if (user.keep_text) {
+                            let newOriginalText = text;
+                            validUrls.forEach((oldUrl, index) => {
+                                const newUrl = `https://t.me/${MAIN_BOT_USERNAME}/${APP_SHORT_NAME}?startapp=link_${linksToInsert[index].short_id}`;
+                                newOriginalText = newOriginalText.replace(oldUrl, newUrl);
+                            });
+                            finalCaption = `${head}${newOriginalText}\n${foot}`;
+                        } else {
+                            finalCaption = `${head}${convertedLinksText.trim()}\n${foot}`;
+                        }
+
+                        // Send back Final Post
+                        if (msg.photo) await tgAPI('sendPhoto', { chat_id: chatId, photo: msg.photo[msg.photo.length - 1].file_id, caption: finalCaption, parse_mode: 'HTML' });
+                        else if (msg.video) await tgAPI('sendVideo', { chat_id: chatId, video: msg.video.file_id, caption: finalCaption, parse_mode: 'HTML' });
+                        else if (msg.animation) await tgAPI('sendAnimation', { chat_id: chatId, animation: msg.animation.file_id, caption: finalCaption, parse_mode: 'HTML' });
+                        else await tgAPI('sendMessage', { chat_id: chatId, text: finalCaption, parse_mode: 'HTML', disable_web_page_preview: true });
+                    }
+                }
             }
         }
         res.status(200).send('OK');
-    } catch (error) { res.status(200).send('Error'); }
+    } catch (error) { 
+        console.error('CONVERTER ERROR:', error);
+        res.status(200).send('Error'); 
+    }
 }
