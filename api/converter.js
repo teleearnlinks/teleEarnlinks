@@ -55,11 +55,10 @@ export default async function handler(req, res) {
             await tgAPI('answerCallbackQuery', { callback_query_id: query.id });
             let user = await getOrCreateUser(chatId, query.message);
 
-            // Handle State Setting with Error Catcher
             const setState = async (stateVal, msgText) => {
                 const { error } = await supabase.from('users').update({ current_action: stateVal }).eq('id', user.id);
                 if (error) {
-                    await tgAPI('sendMessage', { chat_id: chatId, text: `⚠️ <b>Database Error:</b> Column 'current_action' is missing!\nGo to Supabase SQL Editor and run:\n<code>ALTER TABLE users ADD COLUMN current_action TEXT DEFAULT '';</code>`, parse_mode: 'HTML' });
+                    await tgAPI('sendMessage', { chat_id: chatId, text: `⚠️ <b>Database Error:</b> Column 'current_action' missing!`, parse_mode: 'HTML' });
                 } else {
                     await tgAPI('sendMessage', { chat_id: chatId, text: msgText, parse_mode: 'HTML' });
                 }
@@ -73,13 +72,13 @@ export default async function handler(req, res) {
             } 
             else if (data === 'toggle_text') {
                 const newState = !user.keep_text;
-                await supabase.from('users').update({ keep_text: newState }).eq('id', user.id);
+                await supabase.from('users').update({ keep_text: newState, current_action: '' }).eq('id', user.id);
                 user.keep_text = newState;
                 await tgAPI('editMessageReplyMarkup', { chat_id: chatId, message_id: msgId, reply_markup: getMenu(user) });
             } 
             else if (data === 'toggle_bold') {
                 const newState = !user.bold_text;
-                await supabase.from('users').update({ bold_text: newState }).eq('id', user.id);
+                await supabase.from('users').update({ bold_text: newState, current_action: '' }).eq('id', user.id);
                 user.bold_text = newState;
                 await tgAPI('editMessageReplyMarkup', { chat_id: chatId, message_id: msgId, reply_markup: getMenu(user) });
             } 
@@ -89,6 +88,7 @@ export default async function handler(req, res) {
                 await tgAPI('editMessageText', { chat_id: chatId, message_id: msgId, text: `✅ <b>Settings Cleared!</b>\n\nConfigure your converter below:`, parse_mode: 'HTML', reply_markup: getMenu(user) });
             }
             else if (data === 'help_convert') {
+                await supabase.from('users').update({ current_action: '' }).eq('id', user.id);
                 await tgAPI('sendMessage', { chat_id: chatId, text: `💡 <b>How to Convert Links?</b>\n\nJust <b>Forward</b> or <b>Send</b> me any post containing external links. I will instantly extract them, convert them into your Monetized links, and send the post back to you! 🚀`, parse_mode: 'HTML' });
             }
             return res.status(200).send('OK');
@@ -103,12 +103,12 @@ export default async function handler(req, res) {
             let text = msg.text || msg.caption || '';
             let user = await getOrCreateUser(chatId, msg);
 
-            // 🟢 EMERGENCY ESCAPE / RESET
+            // 🟢 EMERGENCY ESCAPE / COMMANDS
             if (text === '/start' || text === '/help' || text === '/cancel') {
-                if (user.current_action) {
-                    await supabase.from('users').update({ current_action: '' }).eq('id', user.id);
-                    user.current_action = '';
-                }
+                // RESET STATE INSTANTLY
+                await supabase.from('users').update({ current_action: '' }).eq('id', user.id);
+                user.current_action = '';
+
                 if (text === '/cancel') {
                     await tgAPI('sendMessage', { chat_id: chatId, text: "❌ <b>Action Cancelled!</b>", parse_mode: 'HTML', reply_markup: getMenu(user) });
                     return res.status(200).send('OK');
@@ -119,28 +119,32 @@ export default async function handler(req, res) {
                 return res.status(200).send('OK');
             }
 
-            // 🟢 ZERO-LAG STATE HANDLER (No Swipe Left required!)
-            if (user.current_action) {
+            // 🟢 ZERO-LAG STATE HANDLER (Handling Header/Footer Input)
+            if (user.current_action === 'set_header' || user.current_action === 'set_footer') {
                 try {
                     let actionMsg = "";
                     if (user.current_action === 'set_header') {
+                        // 1. MUST RESET ACTION FIRST TO PREVENT STICKING
                         await supabase.from('users').update({ converter_header: text, current_action: '' }).eq('id', user.id);
                         user.converter_header = text;
                         actionMsg = "✅ <b>Header Saved Successfully!</b>";
                     } else if (user.current_action === 'set_footer') {
+                        // 1. MUST RESET ACTION FIRST TO PREVENT STICKING
                         await supabase.from('users').update({ converter_footer: text, current_action: '' }).eq('id', user.id);
                         user.converter_footer = text;
                         actionMsg = "✅ <b>Footer Saved Successfully!</b>";
                     }
+                    // Then Send Reply
                     await tgAPI('sendMessage', { chat_id: chatId, text: actionMsg, parse_mode: 'HTML', reply_markup: getMenu(user) });
                 } catch (err) {
+                    await supabase.from('users').update({ current_action: '' }).eq('id', user.id);
                     await tgAPI('sendMessage', { chat_id: chatId, text: `❌ DB Error: ${err.message}` });
                 }
                 return res.status(200).send('OK');
             }
 
-            // ⚡ FAST LINK CONVERTER ENGINE
-            if (!text.startsWith('/')) {
+            // ⚡ FAST LINK CONVERTER ENGINE (Runs only when state is clear)
+            if (!user.current_action && !text.startsWith('/')) {
                 const urlRegex = /(https?:\/\/[^\s]+)/g;
                 const extractedUrls = text.match(urlRegex);
 
@@ -172,7 +176,6 @@ export default async function handler(req, res) {
 
                         let finalCaption = '';
                         if (user.keep_text) {
-                            // Safe parsing
                             let safeOriginalText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
                             validUrls.forEach((oldUrl, index) => {
                                 const newUrl = `https://t.me/${MAIN_BOT_USERNAME}/${APP_SHORT_NAME}?startapp=link_${linksToInsert[index].short_id}`;
@@ -183,17 +186,22 @@ export default async function handler(req, res) {
                             finalCaption = `${head}${convertedLinksText.trim()}\n${foot}`;
                         }
 
-                        if (msg.photo) await tgAPI('sendPhoto', { chat_id: chatId, photo: msg.photo[msg.photo.length - 1].file_id, caption: finalCaption, parse_mode: 'HTML' });
-                        else if (msg.video) await tgAPI('sendVideo', { chat_id: chatId, video: msg.video.file_id, caption: finalCaption, parse_mode: 'HTML' });
-                        else if (msg.animation) await tgAPI('sendAnimation', { chat_id: chatId, animation: msg.animation.file_id, caption: finalCaption, parse_mode: 'HTML' });
-                        else await tgAPI('sendMessage', { chat_id: chatId, text: finalCaption, parse_mode: 'HTML', disable_web_page_preview: true });
+                        let tgRes;
+                        if (msg.photo) tgRes = await tgAPI('sendPhoto', { chat_id: chatId, photo: msg.photo[msg.photo.length - 1].file_id, caption: finalCaption, parse_mode: 'HTML' });
+                        else if (msg.video) tgRes = await tgAPI('sendVideo', { chat_id: chatId, video: msg.video.file_id, caption: finalCaption, parse_mode: 'HTML' });
+                        else if (msg.animation) tgRes = await tgAPI('sendAnimation', { chat_id: chatId, animation: msg.animation.file_id, caption: finalCaption, parse_mode: 'HTML' });
+                        else tgRes = await tgAPI('sendMessage', { chat_id: chatId, text: finalCaption, parse_mode: 'HTML', disable_web_page_preview: true });
+
+                        if (!tgRes.ok) {
+                            await tgAPI('sendMessage', { chat_id: chatId, text: `❌ <b>Formatting Error</b>\nTelegram rejected the message! Please ensure your Header/Footer doesn't have broken HTML tags.\n<i>Detail: ${tgRes.description}</i>`, parse_mode: 'HTML' });
+                        }
                     }
                 }
             }
         }
         res.status(200).send('OK');
     } catch (error) { 
-        console.error(error);
+        console.error('CONVERTER ERROR:', error);
         res.status(200).send('Error'); 
     }
 }
