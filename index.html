@@ -833,11 +833,22 @@
 
         function executeAdClick() {
             const btn = document.getElementById('btn-watch-ad');
+            btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading Ad...';
             document.getElementById('ad-loader-ring').classList.remove('hidden');
             document.getElementById('ad-timer-text').classList.add('hidden');
             if (typeof show_12147149 === 'function') {
-                show_12147149().then(() => { handleAdSuccess(); }).catch(() => { handleAdSuccess(); });
+                // Monetag Rewarded Popup (Higher CPM than standard Interstitial)
+                show_12147149('pop').then(() => {
+                    handleAdSuccess();
+                }).catch(() => {
+                    document.getElementById('ad-loader-ring').classList.add('hidden');
+                    document.getElementById('ad-timer-text').classList.remove('hidden');
+                    document.getElementById('ad-timer-text').innerHTML = '<i class="fa-solid fa-play text-indigo-500"></i>';
+                    btn.disabled = false;
+                    btn.innerHTML = 'Try Again — Click to Watch Ad';
+                    safeAlert('Ad could not complete. Please tap again to watch the ad and unlock your link.');
+                });
             }
         }
 
