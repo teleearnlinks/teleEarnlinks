@@ -1,0 +1,2465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>teleEarn — ⚡ Ultra Admin Panel (God Mode)</title>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #070b14; color: #f8fafc; }
+        .glass-panel { background: rgba(17, 24, 39, 0.88); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 1rem; }
+        .ultra-panel { background: linear-gradient(145deg, rgba(30, 27, 75, 0.92), rgba(15, 23, 42, 0.96)); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 1.1rem; box-shadow: 0 12px 40px -10px rgba(168, 85, 247, 0.25); }
+        .shield-panel { background: linear-gradient(145deg, rgba(6, 78, 59, 0.35), rgba(15, 23, 42, 0.95)); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 1.1rem; }
+        .ultra-gradient { background: linear-gradient(135deg, #9333ea 0%, #4f46e5 50%, #ec4899 100%); }
+        .emerald-gradient { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .amber-gradient { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #090d16; }
+        ::-webkit-scrollbar-thumb { background: #7c3aed; border-radius: 10px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container" class="fixed top-4 right-4 z-[95] flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 md:px-0"></div>
+
+    <!-- CONFIRM MODAL -->
+    <div id="confirm-modal" class="fixed inset-0 z-[85] bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="ultra-panel max-w-md w-full p-6 shadow-2xl">
+            <h3 id="confirm-title" class="text-lg font-extrabold text-white mb-2">Confirm Ultra Action</h3>
+            <p id="confirm-message" class="text-sm text-slate-300 mb-6 leading-relaxed">Are you sure?</p>
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeConfirmModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold">Cancel</button>
+                <button id="btn-confirm-ok" class="px-5 py-2.5 rounded-xl ultra-gradient text-white text-xs font-bold shadow-lg">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- REGISTER NEW USER MODAL -->
+    <div id="create-user-modal" class="fixed inset-0 z-[80] bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="ultra-panel max-w-md w-full p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                <h3 class="text-base font-extrabold text-white"><i class="fa-solid fa-user-plus text-purple-400 mr-2"></i>Register New User Account</h3>
+                <button onclick="closeCreateUserModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-3.5">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Telegram ID *</label>
+                    <input type="number" id="new-user-tgid" placeholder="e.g. 6123456789" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white outline-none focus:border-purple-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">First Name *</label>
+                    <input type="text" id="new-user-name" placeholder="e.g. Aman Sharma" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white outline-none focus:border-purple-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Username (Optional)</label>
+                    <input type="text" id="new-user-username" placeholder="e.g. aman_official" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white outline-none focus:border-purple-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Initial Wallet ($)</label>
+                        <input type="number" step="0.01" id="new-user-balance" value="54.30" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-emerald-400 font-bold outline-none focus:border-purple-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Links to Create</label>
+                        <input type="number" id="new-user-links-cnt" value="25" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white outline-none focus:border-purple-500">
+                    </div>
+                </div>
+                <p class="text-[11px] text-purple-300 bg-purple-500/10 border border-purple-500/30 rounded-lg p-2.5">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Natural Views, Link Views, Today's Earn &amp; Daily Report will be auto-generated!
+                </p>
+                <button onclick="createNewUserAction()" class="w-full ultra-gradient hover:opacity-95 text-white font-extrabold py-3.5 rounded-xl shadow-lg text-xs uppercase tracking-wider">
+                    <i class="fa-solid fa-check mr-2"></i>Create User &amp; Auto-Fill Realistic Stats
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="fixed inset-0 z-50 bg-[#070b14] flex items-center justify-center p-4">
+        <div class="ultra-panel p-8 max-w-sm w-full text-center shadow-2xl">
+            <div class="w-16 h-16 mx-auto ultra-gradient rounded-2xl flex items-center justify-center mb-5 shadow-lg shadow-purple-500/40">
+                <i class="fa-solid fa-wand-magic-sparkles text-3xl text-white"></i>
+            </div>
+            <div class="inline-block px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-purple-500/20 text-purple-300 border border-purple-500/40 mb-2">
+                Standalone File: ultraadmin.html
+            </div>
+            <h2 class="text-2xl font-extrabold text-white mb-1">⚡ Ultra Admin Panel</h2>
+            <p class="text-xs text-slate-400 mb-6">A-to-Z User Controller &bull; Global View Shaving &amp; Daily Limit &bull; 100% Realistic Auto-Fill</p>
+            <input type="password" id="ultra-password" placeholder="Enter Ultra Password" class="w-full bg-slate-950 border border-purple-500/40 text-white px-4 py-3.5 rounded-xl mb-4 focus:outline-none focus:border-pink-500 text-center tracking-widest text-sm">
+            <button id="btn-ultra-login" onclick="loginUltraAdmin()" class="w-full ultra-gradient hover:opacity-95 text-white font-extrabold py-3.5 rounded-xl transition-all shadow-lg shadow-purple-500/30">
+                <i class="fa-solid fa-bolt mr-2"></i>Unlock Ultra God Mode
+            </button>
+        </div>
+    </div>
+
+    <!-- ULTRA ADMIN MAIN WORKSPACE -->
+    <div id="ultra-app" class="hidden flex-1 flex flex-col">
+
+        <!-- TOP STICKY HEADER -->
+        <header class="bg-slate-950/90 backdrop-blur-xl border-b border-purple-500/25 sticky top-0 z-40 px-4 lg:px-8 py-3">
+            <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-3">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl ultra-gradient flex items-center justify-center shadow-lg shadow-purple-500/30">
+                        <i class="fa-solid fa-wand-magic-sparkles text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-lg font-extrabold text-white tracking-tight">teleEarn Ultra Admin</h1>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">100% Synced with admin.html &amp; User App</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400">Natural View Distribution &bull; Live Daily Report Sync &bull; Global View Shaving &amp; Daily Account Limit</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="scrollToSection('sec-global-rules')" class="px-3.5 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-bold transition">
+                        <i class="fa-solid fa-shield-halved mr-1"></i>Global View Limit &amp; Shaving
+                    </button>
+                    <button onclick="scrollToSection('sec-user-controller')" class="px-3.5 py-2 rounded-xl ultra-gradient text-white text-xs font-extrabold shadow transition">
+                        <i class="fa-solid fa-user-astronaut mr-1"></i>User A-to-Z Editor
+                    </button>
+                    <button onclick="refreshUltraEverything(true)" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-purple-400 border border-slate-800 text-xs" title="Force Sync">
+                        <i class="fa-solid fa-rotate"></i>
+                    </button>
+                    <button onclick="logoutUltra()" class="p-2 rounded-xl bg-slate-900 hover:bg-rose-950 text-rose-400 border border-slate-800 text-xs" title="Lock">
+                        <i class="fa-solid fa-power-off"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN WORKSPACE (ALL-IN-ONE VISIBLE LAYOUT — NOTHING HIDDEN!) -->
+        <main class="max-w-7xl w-full mx-auto p-4 lg:p-8 flex-1 space-y-8">
+
+            <!-- ============================================================== -->
+            <!-- PART 1: GLOBAL VIEW SHAVING & DAILY ACCOUNT VIEW LIMIT         -->
+            <!--         (APPLY TO ALL USERS — PROMINENTLY AT THE TOP!)         -->
+            <!-- ============================================================== -->
+            <section id="sec-global-rules" class="shield-panel p-6 shadow-2xl">
+                <div class="flex flex-wrap justify-between items-center gap-4 mb-5 pb-4 border-b border-emerald-500/20">
+                    <div>
+                        <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 mb-1.5">
+                            <i class="fa-solid fa-globe"></i> Global Rules — Apply to All Registered Users
+                        </div>
+                        <h2 class="text-xl font-extrabold text-white flex items-center">
+                            <i class="fa-solid fa-shield-cat text-amber-400 mr-2"></i> Global View Cut (Shaving) &amp; 1-Account Daily View Limit
+                        </h2>
+                        <p class="text-xs text-slate-300 mt-0.5">
+                            Yahan se aap set kar sakte hain ki <b>har X views ke baad kitne views count na ho</b>, aur <b>ek particular Telegram account se 1 din mein kitne se zyada views count na ho</b> (Applies to All Users).
+                        </p>
+                    </div>
+                    <div class="bg-slate-950/90 px-4 py-2.5 rounded-xl border border-emerald-500/30 text-right">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase">Owner Ad Profit Saved</div>
+                        <div class="text-xl font-extrabold text-emerald-400" id="g-profit-boost-badge">+14% Saved</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+                    <!-- OPTION A: HAR X VIEWS KE BAAD Y-Z VIEWS COUNT NA HO -->
+                    <div class="bg-slate-950/90 p-5 rounded-xl border border-purple-500/30">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="text-sm font-extrabold text-white flex items-center">
+                                    <i class="fa-solid fa-scissors text-pink-400 mr-2"></i> 1. Views Cut Rule (Har X Views ke baad Y–Z Views Skip)
+                                </h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Jaise har 50 views ke baad 5 se 10 views count na ho</p>
+                            </div>
+                            <label class="flex items-center space-x-2 cursor-pointer bg-slate-900 px-3 py-1 rounded-lg border border-purple-500/40">
+                                <span class="text-[11px] font-bold text-purple-300">Active</span>
+                                <input type="checkbox" id="g-shave-enabled" checked onchange="updateProfitBoostPreview()" class="w-4 h-4 accent-purple-500 rounded">
+                            </label>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-3 mb-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 uppercase mb-1">Har Kitne Views Par</label>
+                                <input type="number" id="g-shave-every" value="50" min="5" oninput="updateProfitBoostPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm font-extrabold text-white outline-none focus:border-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-pink-300 uppercase mb-1">Min Skip Views</label>
+                                <input type="number" id="g-shave-skip-min" value="5" min="1" oninput="updateProfitBoostPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm font-extrabold text-pink-400 outline-none focus:border-pink-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-pink-300 uppercase mb-1">Max Skip Views</label>
+                                <input type="number" id="g-shave-skip-max" value="10" min="1" oninput="updateProfitBoostPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm font-extrabold text-pink-400 outline-none focus:border-pink-500">
+                            </div>
+                        </div>
+
+                        <div class="p-2.5 rounded-lg bg-purple-500/10 border border-purple-500/25 text-[11px] text-purple-200" id="g-shave-summary-text">
+                            ⚡ <b>Live Rule:</b> Har <b>50 views</b> ke baad randomly <b>5 se 10 views</b> count nahi honge (Visitor ko ad dikhega aur link bhi khulega, par user ke views/balance mein count nahi honge).
+                        </div>
+                    </div>
+
+                    <!-- OPTION B: EK ACCOUNT SE 1 DIN MEI X-Y SE JYADA VIEWS COUNT NA HO -->
+                    <div class="bg-slate-950/90 p-5 rounded-xl border border-amber-500/30">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="text-sm font-extrabold text-white flex items-center">
+                                    <i class="fa-solid fa-user-lock text-amber-400 mr-2"></i> 2. Daily 1-Account View Limit (Per Viewer Cap)
+                                </h3>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Ek particular account se 1 din mein 5–10 se zyada views count na ho</p>
+                            </div>
+                            <label class="flex items-center space-x-2 cursor-pointer bg-slate-900 px-3 py-1 rounded-lg border border-amber-500/40">
+                                <span class="text-[11px] font-bold text-amber-300">Active</span>
+                                <input type="checkbox" id="g-daily-cap-enabled" checked onchange="updateProfitBoostPreview()" class="w-4 h-4 accent-amber-500 rounded">
+                            </label>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-3 mb-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-amber-300 uppercase mb-1">Min Views / Day</label>
+                                <input type="number" id="g-daily-cap-min" value="5" min="1" oninput="updateProfitBoostPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm font-extrabold text-amber-400 outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-amber-300 uppercase mb-1">Max Views / Day</label>
+                                <input type="number" id="g-daily-cap-max" value="10" min="1" oninput="updateProfitBoostPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm font-extrabold text-amber-400 outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-300 uppercase mb-1">Mode</label>
+                                <select id="g-daily-cap-behavior" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs font-bold text-white outline-none">
+                                    <option value="silent_skip">🤫 Silent Skip</option>
+                                    <option value="warn_skip">⚠️ Show Alert</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-[11px] text-amber-200" id="g-daily-cap-summary-text">
+                            🛡️ <b>Live Rule:</b> Ek particular Telegram account se 1 din mein <b>5 se 10 views</b> se zyada count nahi honge (Applies to All Users).
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="mt-4 flex flex-wrap justify-between items-center gap-3">
+                    <div class="flex items-center space-x-3 text-xs text-slate-300">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="g-throttle-enabled" class="w-4 h-4 accent-cyan-500 rounded">
+                            <span>High-Earner Extra Shield: Skip <input type="number" id="g-throttle-skip-pct" value="35" class="w-14 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-center text-cyan-300 font-bold">% views if user earns over $<input type="number" id="g-throttle-daily-usd" value="25" class="w-14 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-center text-emerald-300 font-bold">/day</span>
+                        </label>
+                    </div>
+                    <button id="btn-save-global-rules" onclick="saveGlobalUltraRules()" class="emerald-gradient hover:opacity-95 text-white font-extrabold px-6 py-3 rounded-xl shadow-lg text-xs uppercase tracking-wider flex items-center">
+                        <i class="fa-solid fa-floppy-disk mr-2"></i> Save &amp; Apply Global View Rules to All Users
+                    </button>
+                </div>
+            </section>
+
+            <!-- ============================================================== -->
+            <!-- PART 2: USER SELECTOR & A-TO-Z DASHBOARD CONTROLLER            -->
+            <!-- ============================================================== -->
+            <section id="sec-user-controller" class="space-y-6">
+
+                <!-- USER SEARCH & SELECT BAR -->
+                <div class="ultra-panel p-5">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+                        <div class="lg:col-span-4">
+                            <label class="block text-xs font-bold text-purple-300 uppercase mb-1.5">
+                                <i class="fa-solid fa-magnifying-glass mr-1"></i> Search Registered User (Name, @Username, TG ID)
+                            </label>
+                            <input type="text" id="ultra-user-search" oninput="filterUltraUserSelect()" placeholder="Type name or Telegram ID..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-purple-500 outline-none">
+                        </div>
+                        <div class="lg:col-span-5">
+                            <label class="block text-xs font-bold text-purple-300 uppercase mb-1.5">
+                                <i class="fa-solid fa-users mr-1"></i> Select User to Customize A-to-Z (<span id="ultra-user-count">0</span> Users)
+                            </label>
+                            <select id="ultra-user-select" onchange="selectUltraUser(this.value)" class="w-full bg-slate-950 border border-purple-500/50 rounded-xl p-3 text-sm text-white font-bold focus:border-purple-400 outline-none">
+                                <option value="">-- Choose a User to Edit A-to-Z --</option>
+                            </select>
+                        </div>
+                        <div class="lg:col-span-3 flex gap-2">
+                            <button onclick="openCreateUserModal()" class="flex-1 bg-slate-900 hover:bg-slate-800 text-purple-300 border border-purple-500/40 font-bold py-3 px-3 rounded-xl text-xs transition">
+                                <i class="fa-solid fa-user-plus mr-1"></i> + New User
+                            </button>
+                            <button onclick="reloadSelectedUltraUser()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded-xl text-xs transition" title="Reload User">
+                                <i class="fa-solid fa-rotate"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUICK USERS TABLE (SO ADMIN CAN CLICK ANY USER WITH 1 TAP) -->
+                <div id="ultra-empty-state" class="glass-panel p-6 border border-slate-800">
+                    <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
+                        <div>
+                            <h3 class="text-base font-extrabold text-white"><i class="fa-solid fa-bolt text-amber-400 mr-1.5"></i>Quick Select Any Registered User Below</h3>
+                            <p class="text-xs text-slate-400">Click <b>"⚡ Open Full A-to-Z Control"</b> on any user row below (or select from the dropdown above)</p>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto max-h-80 border border-slate-800 rounded-xl">
+                        <table class="w-full text-left text-xs whitespace-nowrap">
+                            <thead class="bg-slate-900 text-slate-400 uppercase sticky top-0">
+                                <tr>
+                                    <th class="p-3">TG ID</th>
+                                    <th class="p-3">Name</th>
+                                    <th class="p-3">Wallet ($)</th>
+                                    <th class="p-3">Today's Earn</th>
+                                    <th class="p-3">Total Views</th>
+                                    <th class="p-3">CPM</th>
+                                    <th class="p-3">Approved Paid</th>
+                                    <th class="p-3 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="matrix-users-tbody" class="divide-y divide-slate-800/80">
+                                <tr><td colspan="8" class="p-6 text-center text-slate-500">Loading registered users...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ACTIVE USER WORKSPACE -->
+                <div id="ultra-editor-workspace" class="hidden space-y-6">
+
+                    <!-- ====================================================== -->
+                    <!-- TOP SNAPSHOT + ENHANCED FLAWLESS AUTO-FILL ENGINE       -->
+                    <!-- ====================================================== -->
+                    <div class="ultra-panel p-6">
+                        <div class="flex flex-wrap justify-between items-center gap-4 mb-5 pb-4 border-b border-slate-800/90">
+                            <div class="flex items-center space-x-3.5">
+                                <div id="u-snap-avatar" class="w-12 h-12 rounded-2xl ultra-gradient flex items-center justify-center font-extrabold text-xl text-white shadow-lg">U</div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h3 id="u-snap-name" class="font-extrabold text-white text-lg">User Name</h3>
+                                        <span id="u-snap-status" class="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">ACTIVE</span>
+                                    </div>
+                                    <p id="u-snap-meta" class="text-xs text-slate-400 font-mono">TG ID: 000000 | Active CPM: $2.00</p>
+                                </div>
+                            </div>
+                            <button onclick="closeSelectedUserWorkspace()" class="text-xs bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg">
+                                <i class="fa-solid fa-users mr-1"></i> Switch User
+                            </button>
+                        </div>
+
+                        <!-- 6 LIVE METRIC CARDS -->
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+                            <div class="bg-slate-950/90 p-3.5 rounded-xl border border-slate-800">
+                                <div class="text-[10px] text-slate-400 uppercase font-bold">Wallet Balance</div>
+                                <div class="text-xl font-extrabold text-emerald-400 mt-0.5" id="u-snap-balance">$0.00</div>
+                            </div>
+                            <div class="bg-slate-950/90 p-3.5 rounded-xl border border-slate-800">
+                                <div class="text-[10px] text-slate-400 uppercase font-bold">Today's Earn</div>
+                                <div class="text-xl font-extrabold text-cyan-400 mt-0.5" id="u-snap-today">$0.0000</div>
+                            </div>
+                            <div class="bg-slate-950/90 p-3.5 rounded-xl border border-slate-800">
+                                <div class="text-[10px] text-slate-400 uppercase font-bold">Total Views</div>
+                                <div class="text-xl font-extrabold text-white mt-0.5" id="u-snap-views">0</div>
+                            </div>
+                            <div class="bg-slate-950/90 p-3.5 rounded-xl border border-slate-800">
+                                <div class="text-[10px] text-slate-400 uppercase font-bold">Active CPM Rate</div>
+                                <div class="text-xl font-extrabold text-indigo-400 mt-0.5" id="u-snap-cpm">$2.00</div>
+                            </div>
+                            <div class="bg-slate-950/90 p-3.5 rounded-xl border border-slate-800">
+                                <div class="text-[10px] text-slate-400 uppercase font-bold">User's Links</div>
+                                <div class="text-xl font-extrabold text-purple-400 mt-0.5" id="u-snap-links">0</div>
+                            </div>
+                            <div class="bg-slate-950/90 p-3.5 rounded-xl border border-slate-800">
+                                <div class="text-[10px] text-slate-400 uppercase font-bold">Approved Paid</div>
+                                <div class="text-xl font-extrabold text-green-400 mt-0.5" id="u-snap-paid">$0.00</div>
+                            </div>
+                        </div>
+
+                        <!-- ================================================== -->
+                        <!-- 🪄 ENHANCED ULTRA-REALISTIC SMART AUTO-FILL ENGINE  -->
+                        <!-- ================================================== -->
+                        <div class="bg-gradient-to-r from-purple-950/70 via-indigo-950/70 to-pink-950/60 p-5 rounded-2xl border border-pink-500/40 shadow-xl">
+                            <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+                                <div>
+                                    <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/40">
+                                        🪄 Pro Auto-Fill Engine (100% Realistic &amp; Mathematically Synced)
+                                    </span>
+                                    <h4 class="text-base font-extrabold text-white mt-1">
+                                        1-Click Complete Realistic Dashboard Generator
+                                    </h4>
+                                    <p class="text-xs text-slate-300">
+                                        Bas Target Wallet ($) daalein — ye engine apne aap <b>Natural Views (exact non-round numbers)</b>, <b>Link-wise Views</b>, <b>Today's Earn</b>, <b>15 Days Daily Report (synced with Today's Earn)</b>, <b>Past Approved Payouts</b>, aur <b>Referrals</b> ekdam asli hisaab se set kar dega!
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-3">
+                                <div class="bg-slate-950/90 p-3 rounded-xl border border-slate-800">
+                                    <label class="block text-[10px] font-bold text-emerald-400 uppercase mb-1">1. Target Wallet ($)</label>
+                                    <input type="number" step="0.01" id="u-magic-target-dollars" value="64.80" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm font-extrabold text-emerald-400 outline-none">
+                                    <span class="text-[10px] text-slate-400">Adds natural cents automatically</span>
+                                </div>
+                                <div class="bg-slate-950/90 p-3 rounded-xl border border-slate-800">
+                                    <label class="block text-[10px] font-bold text-indigo-300 uppercase mb-1">2. User CPM ($)</label>
+                                    <input type="number" step="0.01" id="u-magic-cpm" value="2.50" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm font-extrabold text-white outline-none">
+                                    <span class="text-[10px] text-slate-400">Used to calculate exact views</span>
+                                </div>
+                                <div class="bg-slate-950/90 p-3 rounded-xl border border-slate-800">
+                                    <label class="block text-[10px] font-bold text-cyan-300 uppercase mb-1">3. Daily Report Days</label>
+                                    <input type="number" id="u-magic-days" value="14" min="3" max="45" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm font-extrabold text-cyan-300 outline-none">
+                                    <span class="text-[10px] text-slate-400">Matches Today's Earn &amp; Wallet</span>
+                                </div>
+                                <div class="bg-slate-950/90 p-3 rounded-xl border border-slate-800">
+                                    <label class="block text-[10px] font-bold text-amber-300 uppercase mb-1">4. Past Approved Payouts</label>
+                                    <select id="u-magic-payouts-mode" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-bold text-white outline-none">
+                                        <option value="keep">Keep Current Payouts</option>
+                                        <option value="add2">Generate 2 Realistic Payouts</option>
+                                        <option value="add4">Generate 4 Realistic Payouts</option>
+                                    </select>
+                                    <span class="text-[10px] text-slate-400">Syncs with Normal Admin</span>
+                                </div>
+                                <div class="flex items-stretch">
+                                    <button id="btn-magic-setup" onclick="runOneClickFullProfileGenerator()" class="w-full ultra-gradient hover:opacity-95 text-white font-extrabold rounded-xl shadow-lg text-xs uppercase tracking-wider px-4 py-3 flex items-center justify-center">
+                                        <i class="fa-solid fa-wand-magic-sparkles mr-2 text-sm"></i> 🪄 Auto-Fill Realistic Dashboard
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ====================================================== -->
+                    <!-- SECTION 1: SMART DOLLAR <-> VIEWS AUTO-SYNC & WALLET   -->
+                    <!-- ====================================================== -->
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                        <!-- LEFT: DOLLAR TO VIEWS AUTO-CALCULATOR & WALLET EDITOR -->
+                        <div class="lg:col-span-7 glass-panel p-6 border border-emerald-500/30">
+                            <div class="flex flex-wrap justify-between items-center gap-2 mb-4 pb-3 border-b border-slate-800">
+                                <div>
+                                    <h3 class="text-base font-extrabold text-white flex items-center">
+                                        <i class="fa-solid fa-coins text-emerald-400 mr-2"></i> 1. Wallet, Today's Earn &amp; Auto-Views Editor
+                                    </h3>
+                                    <p class="text-[11px] text-slate-400">
+                                        Jaise hi aap Dollars ($) daalenge, uske CPM ke hisaab se <b>Total Views</b>, <b>Link Views (Natural Numbers)</b>, <b>Today's Earn</b>, aur <b>Daily Report</b> apne aap set ho jayenge!
+                                    </p>
+                                </div>
+                                <label class="flex items-center space-x-2 bg-emerald-950/60 border border-emerald-500/40 px-3 py-1.5 rounded-xl cursor-pointer">
+                                    <input type="checkbox" id="u-auto-sync-views-from-dollars" checked class="w-4 h-4 accent-emerald-500 rounded">
+                                    <span class="text-[11px] font-bold text-emerald-300">Auto-Sync Views &amp; Daily Report</span>
+                                </label>
+                            </div>
+
+                            <!-- QUICK ADD / SET DOLLARS BAR -->
+                            <div class="bg-slate-950 p-4 rounded-xl border border-emerald-500/30 mb-5">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="text-xs font-bold text-emerald-400 uppercase">
+                                        ⚡ Quick Set / Add Dollars (Auto-Sets Natural Views &amp; Daily Report)
+                                    </label>
+                                    <span id="u-live-dollar-views-hint" class="text-[11px] font-mono text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
+                                        $50.00 &rarr; ~25,000 Natural Views
+                                    </span>
+                                </div>
+
+                                <div class="flex flex-wrap sm:flex-nowrap gap-2">
+                                    <input type="number" step="0.01" id="u-quick-wallet-delta" value="50" oninput="updateLiveDollarToViewsPreview()" placeholder="Enter $ e.g. 50" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-extrabold text-white focus:border-emerald-500 outline-none">
+                                    <button onclick="quickAdjustUserWallet('set')" class="emerald-gradient hover:opacity-95 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs transition shrink-0 shadow-lg">
+                                        <i class="fa-solid fa-bullseye mr-1"></i> Set $ + Views + Daily Report
+                                    </button>
+                                    <button onclick="quickAdjustUserWallet('add')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shrink-0">
+                                        <i class="fa-solid fa-plus mr-1"></i> +Add $ &amp; Views
+                                    </button>
+                                    <button onclick="quickAdjustUserWallet('sub')" class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-3.5 py-2.5 rounded-xl text-xs transition shrink-0">
+                                        <i class="fa-solid fa-minus"></i>
+                                    </button>
+                                </div>
+
+                                <div class="flex flex-wrap gap-1.5 mt-2.5">
+                                    <button onclick="setQuickDelta(10)" class="text-[11px] bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-slate-800 px-2.5 py-1 rounded-lg">$10</button>
+                                    <button onclick="setQuickDelta(25)" class="text-[11px] bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-slate-800 px-2.5 py-1 rounded-lg">$25</button>
+                                    <button onclick="setQuickDelta(50)" class="text-[11px] bg-emerald-950/80 hover:bg-emerald-900 text-emerald-200 border border-emerald-500/40 font-bold px-2.5 py-1 rounded-lg">$50</button>
+                                    <button onclick="setQuickDelta(100)" class="text-[11px] bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-slate-800 px-2.5 py-1 rounded-lg">$100</button>
+                                    <button onclick="setQuickDelta(250)" class="text-[11px] bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-slate-800 px-2.5 py-1 rounded-lg">$250</button>
+                                </div>
+                            </div>
+
+                            <!-- MANUAL / AUTOMATIC LINKED DASHBOARD FIELDS -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Wallet Balance ($)</label>
+                                    <input type="number" step="0.01" id="u-edit-balance" oninput="onManualBalanceInput()" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-emerald-400 font-extrabold focus:border-emerald-500 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Total Views (Natural Exact)</label>
+                                    <input type="number" id="u-edit-total-clicks" oninput="onManualViewsInput()" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white font-extrabold focus:border-emerald-500 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-cyan-300 uppercase mb-1">Today's Earn ($ on Home Dashboard)</label>
+                                    <input type="number" step="0.0001" id="u-edit-today-earn" class="w-full bg-slate-950 border border-cyan-500/40 rounded-xl p-3 text-sm text-cyan-400 font-extrabold focus:border-cyan-500 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Lifetime Total Earnings ($)</label>
+                                    <input type="number" step="0.01" id="u-edit-total-earn" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white font-bold focus:border-emerald-500 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">User Display Name</label>
+                                    <input type="text" id="u-edit-firstname" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-indigo-500 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Telegram @Username</label>
+                                    <input type="text" id="u-edit-username" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-indigo-500 outline-none">
+                                </div>
+                            </div>
+
+                            <button id="btn-save-core-stats" onclick="saveUltraCoreStats()" class="w-full emerald-gradient hover:opacity-95 text-white font-extrabold py-3.5 rounded-xl shadow-lg transition flex items-center justify-center text-sm">
+                                <i class="fa-solid fa-floppy-disk mr-2"></i> Save Balance, Natural Views, Today's Earn &amp; Daily Report
+                            </button>
+                        </div>
+
+                        <!-- RIGHT: CPM EDITOR, REFERRALS & DIRECT TELEGRAM MESSAGE -->
+                        <div class="lg:col-span-5 space-y-6">
+                            <div class="glass-panel p-6 border border-indigo-500/30">
+                                <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                                    <h3 class="text-base font-extrabold text-white flex items-center">
+                                        <i class="fa-solid fa-sliders text-indigo-400 mr-2"></i> 2. User CPM &amp; Referral Overrides
+                                    </h3>
+                                    <span class="text-[10px] px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold">Auto-Recalculates Views</span>
+                                </div>
+
+                                <div class="space-y-3.5 mb-5">
+                                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <label class="text-xs font-bold text-indigo-300 uppercase">User's Custom CPM ($ / 1000 Views)</label>
+                                            <span class="text-[10px] text-slate-400">Global: $<span id="u-global-cpm-hint">2.00</span></span>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <input type="number" step="0.01" id="u-edit-custom-cpm" oninput="onCustomCpmChange()" placeholder="Leave empty for Global CPM" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white font-bold focus:border-indigo-500 outline-none">
+                                            <button onclick="applyCpmGloballyFromUltra()" class="bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-500/40 px-3 rounded-lg text-[11px] font-bold shrink-0">Set as Global</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Custom Min Withdraw ($)</label>
+                                            <input type="number" step="0.5" id="u-edit-custom-minw" placeholder="Global Default" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Refer Commission (%)</label>
+                                            <input type="number" id="u-edit-custom-refpct" placeholder="Global Default" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none">
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Total Referrals Shown</label>
+                                            <input type="number" id="u-edit-ref-count" placeholder="Auto or custom" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Referral Earned ($)</label>
+                                            <input type="number" step="0.01" id="u-edit-ref-earnings" value="0.00" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-emerald-400 font-bold outline-none">
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                        <span class="text-xs font-bold text-white">Account Status</span>
+                                        <select id="u-edit-blocked" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-bold text-white outline-none">
+                                            <option value="false">✅ Active</option>
+                                            <option value="true">🚫 Blocked</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <button onclick="saveUltraCustomRules()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold py-3 rounded-xl shadow-lg transition text-xs uppercase tracking-wider">
+                                    <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i> Save CPM &amp; Adjust Natural Views
+                                </button>
+                            </div>
+
+                            <!-- DIRECT PERSONAL BOT MESSAGE -->
+                            <div class="glass-panel p-5 border border-cyan-500/30">
+                                <h4 class="text-xs font-extrabold text-cyan-300 uppercase mb-2 flex items-center">
+                                    <i class="fa-brands fa-telegram text-cyan-400 text-base mr-1.5"></i> Send Direct Bot Message to User
+                                </h4>
+                                <div class="flex gap-2 mb-2">
+                                    <input type="text" id="u-direct-msg-input" placeholder="e.g. 🎉 Your $100 payout is Approved!" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white outline-none">
+                                    <button onclick="sendDirectMessageToSelectedUser()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-3.5 py-2 rounded-lg text-xs shrink-0">
+                                        <i class="fa-solid fa-paper-plane mr-1"></i>Send
+                                    </button>
+                                </div>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <button onclick="fillDirectMsg('🎉 <b>Congratulations!</b> Your withdrawal has been <b>Approved &amp; Paid</b>! Check your wallet.')" class="text-[10px] bg-slate-900 hover:bg-slate-800 text-slate-300 px-2 py-1 rounded">Payout Sent</button>
+                                    <button onclick="fillDirectMsg('⚡ <b>VIP Upgrade!</b> Your account CPM rate &amp; bonus balance have been upgraded!')" class="text-[10px] bg-slate-900 hover:bg-slate-800 text-slate-300 px-2 py-1 rounded">Bonus Added</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ====================================================== -->
+                    <!-- SECTION 2: BULK LINK VIEWS SPLITTER (NATURAL VALUES)   -->
+                    <!-- ====================================================== -->
+                    <div class="ultra-panel p-6">
+                        <div class="flex flex-wrap justify-between items-center gap-3 mb-4 pb-3 border-b border-purple-500/20">
+                            <div>
+                                <h3 class="text-lg font-extrabold text-white flex items-center">
+                                    <i class="fa-solid fa-fire-flame-curved text-pink-400 mr-2"></i> 3. Smart Bulk Link Views Splitter (100% Natural Exact Values)
+                                </h3>
+                                <p class="text-xs text-slate-300 mt-0.5">
+                                    Saari links par <b>sirf Natural Organic Views</b> (jaise <code class="text-pink-300">4892, 2143, 518, 289, 1347</code>) set honge — koi fake round numbers nahi!
+                                </p>
+                            </div>
+                            <span class="px-3.5 py-1.5 rounded-xl bg-slate-950 border border-purple-500/40 text-xs font-bold text-purple-300">
+                                Total Links: <span id="u-bulk-links-count" class="text-white">0</span> &bull; Current Link Views Sum: <span id="u-bulk-links-views-sum" class="text-emerald-400">0</span>
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                            <div class="lg:col-span-7 space-y-4 bg-slate-950/90 p-5 rounded-xl border border-slate-800">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-pink-300 uppercase mb-1">Total Views to Distribute *</label>
+                                        <input type="number" id="u-bulk-total-views" value="100000" oninput="updateBulkViewsDollarHint()" class="w-full bg-slate-900 border border-purple-500/50 rounded-xl p-3 text-base font-extrabold text-white outline-none">
+                                        <div class="text-[11px] text-emerald-400 font-mono mt-1" id="u-bulk-views-dollar-hint">= $200.00 at current CPM</div>
+                                        <div class="flex flex-wrap gap-1.5 mt-2">
+                                            <button onclick="setBulkViewsPreset(25430)" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-purple-300 px-2 py-1 rounded">~25K (25,430)</button>
+                                            <button onclick="setBulkViewsPreset(51280)" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-purple-300 px-2 py-1 rounded">~50K (51,280)</button>
+                                            <button onclick="setBulkViewsPreset(100000)" class="text-[10px] bg-purple-900/70 text-white font-bold px-2 py-1 rounded">1 Lakh (100,000)</button>
+                                            <button onclick="setBulkViewsPreset(248920)" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-purple-300 px-2 py-1 rounded">~2.5 Lakh</button>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Distribution Mode</label>
+                                            <select id="u-bulk-mode" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-bold text-white outline-none">
+                                                <option value="set">🎯 Set Exact Total Views (= Target)</option>
+                                                <option value="add">➕ Add Target Views on Top of Current Views</option>
+                                            </select>
+                                        </div>
+                                        <div class="p-3 rounded-xl bg-purple-950/40 border border-purple-500/30 text-[11px] text-purple-200">
+                                            <i class="fa-solid fa-wand-sparkles text-pink-400 mr-1"></i> <b>Natural Mode Locked:</b> Views automatically split into organic non-round numbers (e.g. 4892, 2041, 518, 289).
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-2 pt-2 border-t border-slate-800 text-xs">
+                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                        <input type="checkbox" id="u-bulk-sync-dash-views" checked class="w-4 h-4 accent-purple-500 rounded">
+                                        <span class="text-slate-200">Sync User's Dashboard <b>Total Views</b> &amp; Normal Admin Panel Views</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                        <input type="checkbox" id="u-bulk-sync-wallet" checked class="w-4 h-4 accent-purple-500 rounded">
+                                        <span class="text-slate-200">Auto-update <b>Wallet Balance ($), Today's Earn &amp; Daily Report</b> to match <span class="font-mono text-emerald-300">(Views &divide; 1000) &times; CPM</span></span>
+                                    </label>
+                                </div>
+
+                                <div class="flex flex-wrap gap-3 pt-1">
+                                    <button onclick="previewBulkDistribution()" class="bg-slate-800 hover:bg-slate-700 text-purple-200 font-bold py-3 px-4 rounded-xl text-xs">
+                                        <i class="fa-solid fa-dice mr-1.5"></i> Preview Natural Split
+                                    </button>
+                                    <button id="btn-execute-bulk-views" onclick="executeBulkViewsDistribution()" class="flex-1 ultra-gradient hover:opacity-95 text-white font-extrabold py-3 px-5 rounded-xl text-xs shadow-lg">
+                                        <i class="fa-solid fa-bolt mr-1.5"></i> Distribute Natural Views Across All Links
+                                    </button>
+                                </div>
+
+                                <div id="u-bulk-progress-wrap" class="hidden pt-2">
+                                    <div class="flex justify-between text-xs font-bold text-purple-300 mb-1">
+                                        <span id="u-bulk-progress-label">Updating links...</span>
+                                        <span id="u-bulk-progress-pct">0%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden">
+                                        <div id="u-bulk-progress-bar" class="ultra-gradient h-2.5 rounded-full transition-all" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="lg:col-span-5 space-y-4">
+                                <div class="bg-slate-950/90 p-4 rounded-xl border border-slate-800">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <h4 class="text-xs font-bold text-purple-300 uppercase">Natural Split Preview</h4>
+                                        <span id="u-preview-summary" class="text-[10px] text-slate-400">Organic Numbers</span>
+                                    </div>
+                                    <div id="u-bulk-preview-box" class="max-h-36 overflow-y-auto space-y-1.5 text-xs text-slate-400 pr-1">
+                                        <div class="text-center py-6 text-slate-500">Click "Preview Natural Split" to inspect how natural views will be assigned.</div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-slate-950/90 p-4 rounded-xl border border-slate-800">
+                                    <h4 class="text-xs font-bold text-indigo-300 uppercase mb-1.5"><i class="fa-solid fa-plus-circle mr-1"></i> Generate Links for User</h4>
+                                    <p class="text-[11px] text-slate-400 mb-2">If this user has few links, generate sample monetized links in 1 click:</p>
+                                    <div class="flex gap-2">
+                                        <input type="number" id="u-gen-links-count" value="25" min="1" max="1000" class="w-24 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white outline-none">
+                                        <button id="btn-gen-sample-links" onclick="generateSampleLinksForUser()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-3 rounded-lg text-xs">
+                                            + Generate Links
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- INDIVIDUAL LINKS TABLE -->
+                        <div class="mt-5 pt-4 border-t border-slate-800/80">
+                            <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+                                <h4 class="text-xs font-bold text-slate-300 uppercase"><i class="fa-solid fa-link mr-1.5 text-indigo-400"></i> Individual Links Editor</h4>
+                                <input type="text" id="u-links-filter" oninput="renderUltraUserLinksTable()" placeholder="Search short_id or URL..." class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none w-60">
+                            </div>
+                            <div class="overflow-x-auto max-h-64 border border-slate-800 rounded-xl bg-slate-950/70">
+                                <table class="w-full text-left text-xs whitespace-nowrap">
+                                    <thead class="bg-slate-900 text-slate-400 sticky top-0">
+                                        <tr>
+                                            <th class="p-3">Short ID</th>
+                                            <th class="p-3">Destination URL</th>
+                                            <th class="p-3">Views</th>
+                                            <th class="p-3">Earnings ($)</th>
+                                            <th class="p-3 text-right">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="u-links-tbody" class="divide-y divide-slate-800/60">
+                                        <tr><td colspan="5" class="p-4 text-center text-slate-500">No links loaded.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ====================================================== -->
+                    <!-- SECTION 3: PAYOUT HISTORY CONTROLLER (ANY DATE/AMOUNT) -->
+                    <!-- ====================================================== -->
+                    <div class="glass-panel p-6 border border-amber-500/30">
+                        <div class="flex flex-wrap justify-between items-center gap-2 mb-4 pb-3 border-b border-slate-800">
+                            <div>
+                                <h3 class="text-lg font-extrabold text-white flex items-center">
+                                    <i class="fa-solid fa-money-check-dollar text-amber-400 mr-2"></i> 4. Payout History Controller (Any Date &amp; Any Amount)
+                                </h3>
+                                <p class="text-xs text-slate-300 mt-0.5">
+                                    Add or edit any withdrawal (e.g. $100 Approved on any date). Immediately updates Normal Admin Panel (`admin.html`) &amp; User's Wallet History!
+                                </p>
+                            </div>
+                            <div class="text-xs">
+                                <span class="text-slate-400">User's Approved Withdrawals:</span>
+                                <span id="u-payout-approved-sum" class="font-extrabold text-emerald-400 text-sm ml-1">$0.00</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-5">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Amount ($) *</label>
+                                    <input type="number" step="0.01" id="u-pay-amount" placeholder="e.g. 100.00" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm font-bold text-emerald-400 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Custom Date *</label>
+                                    <input type="date" id="u-pay-date" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Method *</label>
+                                    <input type="text" id="u-pay-method" value="UPI" placeholder="UPI / USDT / Bank" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Payment Details *</label>
+                                    <input type="text" id="u-pay-details" placeholder="e.g. user@upi" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Status *</label>
+                                    <select id="u-pay-status" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm font-bold text-white outline-none">
+                                        <option value="approved">✅ Approved (Paid)</option>
+                                        <option value="pending">⏳ Pending</option>
+                                        <option value="rejected">❌ Rejected</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap justify-between items-center gap-3 mt-3 pt-3 border-t border-slate-800">
+                                <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
+                                    <input type="checkbox" id="u-pay-deduct-wallet" class="w-4 h-4 accent-amber-500 rounded">
+                                    <span>Also deduct this amount from User's current Wallet Balance</span>
+                                </label>
+                                <button onclick="addCustomPayoutForUser()" class="amber-gradient hover:opacity-95 text-white font-extrabold px-5 py-2.5 rounded-xl text-xs shadow-lg">
+                                    <i class="fa-solid fa-plus mr-1.5"></i> Add Payout Record
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto border border-slate-800 rounded-xl bg-slate-950/70">
+                            <table class="w-full text-left text-xs whitespace-nowrap">
+                                <thead class="bg-slate-900 text-slate-400 uppercase">
+                                    <tr>
+                                        <th class="p-3">Date</th>
+                                        <th class="p-3">Amount ($)</th>
+                                        <th class="p-3">Method</th>
+                                        <th class="p-3">Details</th>
+                                        <th class="p-3">Status</th>
+                                        <th class="p-3 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="u-payouts-tbody" class="divide-y divide-slate-800/70">
+                                    <tr><td colspan="6" class="p-6 text-center text-slate-500">No payouts for this user yet.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ====================================================== -->
+                    <!-- SECTION 4: DAILY REPORT & REFERRALS LIST CUSTOMIZER    -->
+                    <!-- ====================================================== -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="glass-panel p-6 border border-cyan-500/25">
+                            <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-800">
+                                <div>
+                                    <h3 class="text-sm font-extrabold text-white"><i class="fa-solid fa-calendar-days text-cyan-400 mr-2"></i>5. Home "Daily Report" Customizer (Live Synced)</h3>
+                                    <p class="text-[11px] text-slate-400">Syncs directly into both <code class="text-cyan-300">custom_daily_report</code> &amp; <code class="text-cyan-300">click_logs</code> so User Dashboard always shows daily earnings!</p>
+                                </div>
+                                <button onclick="autoGenerateDailyReportForUser(14)" class="bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40 px-2.5 py-1.5 rounded-lg text-[10px] font-bold shrink-0">
+                                    🪄 Auto-Fill 14 Days
+                                </button>
+                            </div>
+                            <div class="flex gap-2 mb-3">
+                                <input type="date" id="u-daily-date" class="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-white outline-none">
+                                <input type="number" step="0.0001" id="u-daily-amount" placeholder="Earned ($) e.g. 6.4320" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-white outline-none">
+                                <button onclick="addCustomDailyReportRow()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-3.5 py-2 rounded-lg text-xs">Add Date</button>
+                            </div>
+                            <div id="u-daily-report-list" class="space-y-1.5 max-h-52 overflow-y-auto pr-1 text-xs"></div>
+                        </div>
+
+                        <div class="glass-panel p-6 border border-pink-500/25">
+                            <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-800">
+                                <div>
+                                    <h3 class="text-sm font-extrabold text-white"><i class="fa-solid fa-users text-pink-400 mr-2"></i>6. "Referrals List" Customizer</h3>
+                                    <p class="text-[11px] text-slate-400">Add referred friends shown on the user's Refer page</p>
+                                </div>
+                                <button onclick="autoGenerateReferralsForUser()" class="bg-pink-950 hover:bg-pink-900 text-pink-300 border border-pink-500/40 px-2.5 py-1.5 rounded-lg text-[10px] font-bold">
+                                    🪄 +6 Referrals
+                                </button>
+                            </div>
+                            <div class="flex gap-2 mb-3">
+                                <input type="text" id="u-ref-person-name" placeholder="Friend Name (e.g. Rohit Kumar)" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-white outline-none">
+                                <select id="u-ref-person-status" class="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-white outline-none">
+                                    <option value="Registered">Registered</option>
+                                    <option value="Active Earner">Active Earner</option>
+                                </select>
+                                <button onclick="addCustomReferralPerson()" class="bg-pink-600 hover:bg-pink-500 text-white font-bold px-3.5 py-2 rounded-lg text-xs">Add</button>
+                            </div>
+                            <div id="u-custom-referrals-list" class="space-y-1.5 max-h-52 overflow-y-auto pr-1 text-xs"></div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        // =====================================================================
+        // 1. CONFIG & STATE
+        // =====================================================================
+        const SUPABASE_URL = 'https://zrhrvbkefmybketbiicw.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_Iwz3ILjEoOrr_PBqRc7nIQ_UunV1f1y';
+        const VERCEL_BROADCAST_API = 'https://teleearnlinks.vercel.app/api/broadcast';
+        const ULTRA_PASSWORD = 'Priyans2109J';
+
+        const dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let settingsId = null;
+        let globalSettings = { cpm: 2.0, refer_percent: 10, min_withdraw: 5.0 };
+        let allUsersCache = [];
+        let allWithdrawalsCache = [];
+        let ultraConfigsMap = {};
+
+        let globalUltraRulesRowId = null;
+        let globalUltraRules = {
+            shave_enabled: true,
+            shave_every_views: 50,
+            shave_skip_min: 5,
+            shave_skip_max: 10,
+            daily_cap_enabled: true,
+            daily_cap_min: 5,
+            daily_cap_max: 10,
+            daily_cap_behavior: 'silent_skip',
+            throttle_enabled: false,
+            throttle_daily_usd: 25,
+            throttle_skip_pct: 35
+        };
+
+        let selectedUltraUser = null;
+        let selectedUltraConfig = null;
+        let selectedUserLinks = [];
+        let selectedUserPayouts = [];
+        let pendingConfirmFn = null;
+
+        const DEFAULT_ULTRA_CONFIG = {
+            custom_cpm: null,
+            custom_min_withdraw: null,
+            custom_refer_percent: null,
+            ref_earnings: 0,
+            custom_ref_count: null,
+            custom_referrals: [],
+            custom_daily_report: {}
+        };
+
+        // =====================================================================
+        // 2. UI HELPERS
+        // =====================================================================
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colors = {
+                success: 'border-emerald-500/60 bg-slate-900/95 text-emerald-300',
+                error: 'border-rose-500/60 bg-slate-900/95 text-rose-300',
+                info: 'border-purple-500/60 bg-slate-900/95 text-purple-300'
+            };
+            toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl border shadow-2xl text-xs font-bold transition-all ${colors[type] || colors.info}`;
+            toast.innerHTML = `<i class="fa-solid fa-bolt"></i><span class="flex-1">${escapeHtml(message)}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 250);
+            }, 3600);
+        }
+
+        function askConfirm(title, message, onConfirm) {
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-message').innerText = message;
+            pendingConfirmFn = onConfirm;
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        window.closeConfirmModal = function() {
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            pendingConfirmFn = null;
+        };
+
+        document.getElementById('btn-confirm-ok').addEventListener('click', async () => {
+            const fn = pendingConfirmFn;
+            closeConfirmModal();
+            if (typeof fn === 'function') await fn();
+        });
+
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        window.scrollToSection = function(secId) {
+            const el = document.getElementById(secId);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
+        window.closeSelectedUserWorkspace = function() {
+            selectedUltraUser = null;
+            document.getElementById('ultra-user-select').value = '';
+            document.getElementById('ultra-editor-workspace').classList.add('hidden');
+            document.getElementById('ultra-empty-state').classList.remove('hidden');
+        };
+
+        // =====================================================================
+        // 3. AUTH & INITIALIZATION
+        // =====================================================================
+        window.loginUltraAdmin = async function() {
+            const pwd = document.getElementById('ultra-password').value.trim();
+            if (pwd !== ULTRA_PASSWORD) {
+                showToast('Invalid Ultra Admin Password!', 'error');
+                return;
+            }
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('ultra-app').classList.remove('hidden');
+            const todayIso = new Date().toISOString().split('T')[0];
+            document.getElementById('u-pay-date').value = todayIso;
+            document.getElementById('u-daily-date').value = todayIso;
+            showToast('⚡ Ultra Admin God Mode Unlocked!', 'info');
+            await refreshUltraEverything(false);
+        };
+
+        document.getElementById('ultra-password').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') window.loginUltraAdmin();
+        });
+
+        window.logoutUltra = function() {
+            document.getElementById('ultra-password').value = '';
+            document.getElementById('ultra-app').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+        };
+
+        window.refreshUltraEverything = async function(withToast = false) {
+            await Promise.all([
+                loadGlobalSettings(),
+                loadGlobalUltraRules(),
+                fetchAllUltraConfigs(),
+                loadAllUsersAndWithdrawals()
+            ]);
+            populateUltraUserDropdown();
+            renderUsersMatrix();
+            if (selectedUltraUser) {
+                const refreshed = allUsersCache.find(u => String(u.id) === String(selectedUltraUser.id));
+                if (refreshed) {
+                    selectedUltraUser = refreshed;
+                    renderUltraUserWorkspace();
+                }
+            }
+            if (withToast) showToast('Synced with Supabase, Normal Admin & User Mini App!', 'success');
+        };
+
+        async function loadGlobalSettings() {
+            try {
+                const { data } = await dbClient.from('settings').select('*').limit(1).maybeSingle();
+                if (data) {
+                    settingsId = data.id;
+                    globalSettings = { ...globalSettings, ...data };
+                }
+            } catch (e) {}
+        }
+
+        async function loadAllUsersAndWithdrawals() {
+            try {
+                const [uRes, wRes] = await Promise.all([
+                    dbClient.from('users').select('*').order('created_at', { ascending: false }),
+                    dbClient.from('withdrawals').select('*').order('created_at', { ascending: false })
+                ]);
+                allUsersCache = uRes.data || [];
+                allWithdrawalsCache = wRes.data || [];
+            } catch (e) {}
+        }
+
+        // =====================================================================
+        // 4. GLOBAL VIEW SHAVING & DAILY VIEW CAP RULES (`__ultra_global_rules`)
+        // =====================================================================
+        async function loadGlobalUltraRules() {
+            try {
+                const { data } = await dbClient
+                    .from('links')
+                    .select('id, original_url')
+                    .eq('short_id', '__ultra_global_rules')
+                    .maybeSingle();
+                if (data) {
+                    globalUltraRulesRowId = data.id;
+                    try {
+                        globalUltraRules = { ...globalUltraRules, ...JSON.parse(data.original_url || '{}') };
+                    } catch (e) {}
+                }
+                document.getElementById('g-shave-enabled').checked = globalUltraRules.shave_enabled !== false;
+                document.getElementById('g-shave-every').value = globalUltraRules.shave_every_views || 50;
+                document.getElementById('g-shave-skip-min').value = globalUltraRules.shave_skip_min || 5;
+                document.getElementById('g-shave-skip-max').value = globalUltraRules.shave_skip_max || 10;
+
+                document.getElementById('g-daily-cap-enabled').checked = globalUltraRules.daily_cap_enabled !== false;
+                document.getElementById('g-daily-cap-min').value = globalUltraRules.daily_cap_min || 5;
+                document.getElementById('g-daily-cap-max').value = globalUltraRules.daily_cap_max || 10;
+                document.getElementById('g-daily-cap-behavior').value = globalUltraRules.daily_cap_behavior || 'silent_skip';
+
+                document.getElementById('g-throttle-enabled').checked = !!globalUltraRules.throttle_enabled;
+                document.getElementById('g-throttle-daily-usd').value = globalUltraRules.throttle_daily_usd || 25;
+                document.getElementById('g-throttle-skip-pct').value = globalUltraRules.throttle_skip_pct || 35;
+
+                updateProfitBoostPreview();
+            } catch (e) {}
+        }
+
+        window.updateProfitBoostPreview = function() {
+            const shaveOn = document.getElementById('g-shave-enabled').checked;
+            const every = Math.max(1, parseInt(document.getElementById('g-shave-every').value, 10) || 50);
+            const sMin = Math.max(0, parseInt(document.getElementById('g-shave-skip-min').value, 10) || 5);
+            const sMax = Math.max(sMin, parseInt(document.getElementById('g-shave-skip-max').value, 10) || 10);
+
+            const capOn = document.getElementById('g-daily-cap-enabled').checked;
+            const cMin = Math.max(1, parseInt(document.getElementById('g-daily-cap-min').value, 10) || 5);
+            const cMax = Math.max(cMin, parseInt(document.getElementById('g-daily-cap-max').value, 10) || 10);
+
+            const avgSkip = (sMin + sMax) / 2;
+            const shavePct = shaveOn ? Math.round((avgSkip / (every + avgSkip)) * 100) : 0;
+            const capBonus = capOn ? 8 : 0;
+            document.getElementById('g-profit-boost-badge').innerText = `+${shavePct + capBonus}% Saved`;
+
+            document.getElementById('g-shave-summary-text').innerHTML = shaveOn
+                ? `⚡ <b>Active Rule:</b> Har <b>${every} views</b> ke baad randomly <b>${sMin} se ${sMax} views</b> count nahi honge (Applies to All Users).`
+                : `⚪ Cycle View Shaving is currently disabled.`;
+
+            document.getElementById('g-daily-cap-summary-text').innerHTML = capOn
+                ? `🛡️ <b>Active Rule:</b> Ek particular Telegram account se 1 din mein <b>${cMin} se ${cMax} views</b> se zyada count nahi honge (Applies to All Users).`
+                : `⚪ Per-Account Daily View Cap is currently disabled.`;
+        };
+
+        window.saveGlobalUltraRules = async function() {
+            const btn = document.getElementById('btn-save-global-rules');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving...';
+
+            const sMin = Math.max(1, parseInt(document.getElementById('g-shave-skip-min').value, 10) || 5);
+            const cMin = Math.max(1, parseInt(document.getElementById('g-daily-cap-min').value, 10) || 5);
+
+            globalUltraRules = {
+                shave_enabled: document.getElementById('g-shave-enabled').checked,
+                shave_every_views: Math.max(5, parseInt(document.getElementById('g-shave-every').value, 10) || 50),
+                shave_skip_min: sMin,
+                shave_skip_max: Math.max(sMin, parseInt(document.getElementById('g-shave-skip-max').value, 10) || 10),
+                daily_cap_enabled: document.getElementById('g-daily-cap-enabled').checked,
+                daily_cap_min: cMin,
+                daily_cap_max: Math.max(cMin, parseInt(document.getElementById('g-daily-cap-max').value, 10) || 10),
+                daily_cap_behavior: document.getElementById('g-daily-cap-behavior').value,
+                throttle_enabled: document.getElementById('g-throttle-enabled').checked,
+                throttle_daily_usd: parseFloat(document.getElementById('g-throttle-daily-usd').value) || 25,
+                throttle_skip_pct: parseInt(document.getElementById('g-throttle-skip-pct').value, 10) || 35
+            };
+
+            const serialized = JSON.stringify(globalUltraRules);
+
+            try {
+                if (globalUltraRulesRowId) {
+                    await dbClient.from('links').update({ original_url: serialized }).eq('id', globalUltraRulesRowId);
+                } else {
+                    const { data: exist } = await dbClient.from('links').select('id').eq('short_id', '__ultra_global_rules').maybeSingle();
+                    if (exist?.id) {
+                        globalUltraRulesRowId = exist.id;
+                        await dbClient.from('links').update({ original_url: serialized }).eq('id', exist.id);
+                    } else {
+                        const { data: created } = await dbClient
+                            .from('links')
+                            .insert([{ short_id: '__ultra_global_rules', original_url: serialized, user_id: null, clicks: 0, earnings: 0 }])
+                            .select('id')
+                            .maybeSingle();
+                        if (created?.id) globalUltraRulesRowId = created.id;
+                    }
+                }
+                showToast('Global View Shaving & 1-Account Daily View Limit saved for ALL users!', 'success');
+            } catch (e) {
+                showToast('Error saving global rules: ' + e.message, 'error');
+            }
+            btn.innerHTML = orig;
+        };
+
+        // =====================================================================
+        // 5. PER-USER ULTRA CONFIG & NATURAL DAILY REPORT + CLICK_LOGS SYNC
+        // =====================================================================
+        async function fetchAllUltraConfigs() {
+            try {
+                const { data } = await dbClient
+                    .from('links')
+                    .select('id, short_id, original_url')
+                    .like('short_id', '__uadmin_%');
+                ultraConfigsMap = {};
+                if (Array.isArray(data)) {
+                    data.forEach(row => {
+                        const uid = row.short_id.replace('__uadmin_', '');
+                        try {
+                            ultraConfigsMap[uid] = {
+                                rowId: row.id,
+                                config: { ...DEFAULT_ULTRA_CONFIG, ...JSON.parse(row.original_url || '{}') }
+                            };
+                        } catch (e) {
+                            ultraConfigsMap[uid] = { rowId: row.id, config: { ...DEFAULT_ULTRA_CONFIG } };
+                        }
+                    });
+                }
+            } catch (e) {}
+        }
+
+        async function saveUltraConfigForUser(userId, configObj) {
+            const key = `__uadmin_${userId}`;
+            const serialized = JSON.stringify(configObj);
+            const existing = ultraConfigsMap[userId];
+
+            if (existing && existing.rowId) {
+                await dbClient.from('links').update({ original_url: serialized }).eq('id', existing.rowId);
+                ultraConfigsMap[userId].config = configObj;
+                return;
+            }
+
+            const { data: check } = await dbClient.from('links').select('id').eq('short_id', key).maybeSingle();
+            if (check && check.id) {
+                await dbClient.from('links').update({ original_url: serialized }).eq('id', check.id);
+                ultraConfigsMap[userId] = { rowId: check.id, config: configObj };
+            } else {
+                const { data: created } = await dbClient
+                    .from('links')
+                    .insert([{ short_id: key, original_url: serialized, user_id: null, clicks: 0, earnings: 0 }])
+                    .select('id')
+                    .maybeSingle();
+                ultraConfigsMap[userId] = { rowId: created?.id || null, config: configObj };
+            }
+        }
+
+        function getEffectiveCpmForUser(userId) {
+            if (selectedUltraUser && String(selectedUltraUser.id) === String(userId)) {
+                const liveInput = document.getElementById('u-edit-custom-cpm')?.value;
+                if (liveInput !== undefined && liveInput !== '' && !isNaN(parseFloat(liveInput)) && parseFloat(liveInput) > 0) {
+                    return parseFloat(liveInput);
+                }
+            }
+            const cfg = ultraConfigsMap[userId]?.config;
+            if (cfg && cfg.custom_cpm !== null && cfg.custom_cpm !== '' && !isNaN(parseFloat(cfg.custom_cpm)) && parseFloat(cfg.custom_cpm) > 0) {
+                return parseFloat(cfg.custom_cpm);
+            }
+            return Math.max(0.01, parseFloat(globalSettings.cpm || 2.0));
+        }
+
+        /**
+         * Calculates exact views from dollars & CPM, adding slight natural non-zero
+         * last digits if the result would otherwise end in '00' so it looks 100% organic!
+         */
+        function calculateNaturalViewsFromDollars(dollars, cpm) {
+            const safeCpm = Math.max(0.01, parseFloat(cpm || 2.0));
+            const d = parseFloat(dollars || 0);
+            if (d <= 0) return 0;
+            let raw = Math.round((d / safeCpm) * 1000);
+            if (raw > 100 && raw % 50 === 0) {
+                // Add a small natural offset (-17 to +23, non-zero mod 10)
+                const offsets = [-19, -13, -7, -3, 3, 7, 11, 14, 18, 23];
+                raw += offsets[Math.floor(Math.random() * offsets.length)];
+            }
+            return Math.max(1, raw);
+        }
+
+        /**
+         * Generates a 100% realistic date-wise Daily Report map (covering `daysCount` days
+         * up to today, so both current month and previous month have natural rows!)
+         * AND guarantees Today's date row == todayEarn!
+         * Also syncs real click_logs rows into Supabase so even the original index.html
+         * click_logs query displays daily earnings on the User's Home Dashboard!
+         */
+        async function buildAndSyncRealisticDailyReport(userId, totalTargetUsd, todayEarnUsd, cpm, daysCount = 12) {
+            const now = new Date();
+            const todayIso = now.toISOString().split('T')[0];
+            const reportMap = { ...(selectedUltraConfig?.custom_daily_report || {}) };
+
+            const safeTotal = Math.max(todayEarnUsd, parseFloat(totalTargetUsd || 10));
+            const remainingUsd = Math.max(0, safeTotal - todayEarnUsd);
+            const pastDays = Math.max(2, daysCount - 1);
+
+            // Set Today's exact earning
+            reportMap[todayIso] = Number(todayEarnUsd.toFixed(4));
+
+            // Generate natural weights for past days
+            const weights = [];
+            let wSum = 0;
+            for (let i = 1; i <= pastDays; i++) {
+                const w = 0.45 + Math.random() * 1.15;
+                weights.push(w);
+                wSum += w;
+            }
+
+            const safeCpm = Math.max(0.1, parseFloat(cpm || 2.0));
+            for (let i = 1; i <= pastDays; i++) {
+                const d = new Date(now);
+                d.setDate(now.getDate() - i);
+                const iso = d.toISOString().split('T')[0];
+                // Make each day's earning correspond to an integer number of views * (cpm / 1000)
+                const rawDayUsd = remainingUsd > 0
+                    ? (remainingUsd * (weights[i - 1] / wSum))
+                    : (todayEarnUsd * (0.6 + Math.random() * 0.8));
+                const dayViews = Math.max(3, Math.round((rawDayUsd / safeCpm) * 1000));
+                const exactDayUsd = Number(((dayViews / 1000) * safeCpm).toFixed(4));
+                reportMap[iso] = exactDayUsd;
+            }
+
+            if (selectedUltraConfig) {
+                selectedUltraConfig.custom_daily_report = reportMap;
+                await saveUltraConfigForUser(userId, selectedUltraConfig);
+            }
+
+            // ALSO sync timestamped rows into `click_logs` (with clicker_tg_id: null so it never
+            // blocks real clickers) so even an older index.html that reads `click_logs` shows Daily Report!
+            try {
+                if (selectedUserLinks && selectedUserLinks.length > 0) {
+                    const primaryLinkId = selectedUserLinks[0].id;
+                    // Remove previous synthetic logs (clicker_tg_id IS NULL) for this link to avoid duplicates
+                    await dbClient.from('click_logs').delete().eq('link_id', primaryLinkId).is('clicker_tg_id', null);
+
+                    const globalCpm = Math.max(0.1, parseFloat(globalSettings.cpm || 2.0));
+                    const logsToInsert = [];
+                    const recentEntries = Object.entries(reportMap).slice(0, 14);
+
+                    for (const [dtIso, usdVal] of recentEntries) {
+                        // How many clicks at globalCpm equal usdVal? Cap at 60 per day so insert is instant
+                        const neededClicks = Math.min(60, Math.max(1, Math.round((parseFloat(usdVal || 0) / globalCpm) * 1000)));
+                        for (let k = 0; k < neededClicks; k++) {
+                            logsToInsert.push({
+                                link_id: primaryLinkId,
+                                clicker_tg_id: null,
+                                created_at: `${dtIso}T10:${String(k % 60).padStart(2, '0')}:00Z`
+                            });
+                        }
+                    }
+
+                    if (logsToInsert.length > 0) {
+                        const chunkSize = 250;
+                        for (let i = 0; i < logsToInsert.length; i += chunkSize) {
+                            await dbClient.from('click_logs').insert(logsToInsert.slice(i, i + chunkSize));
+                        }
+                    }
+                }
+            } catch (e) {}
+
+            return reportMap;
+        }
+
+        // =====================================================================
+        // 6. USER SELECTION & NATURAL VIEWS AUTO-CALCULATION
+        // =====================================================================
+        function populateUltraUserDropdown(filterText = '') {
+            const sel = document.getElementById('ultra-user-select');
+            const countEl = document.getElementById('ultra-user-count');
+            if (!sel) return;
+
+            const q = filterText.toLowerCase().trim();
+            const list = !q
+                ? allUsersCache
+                : allUsersCache.filter(u =>
+                    String(u.first_name || '').toLowerCase().includes(q) ||
+                    String(u.username || '').toLowerCase().includes(q) ||
+                    String(u.telegram_id || '').toLowerCase().includes(q)
+                );
+
+            if (countEl) countEl.innerText = list.length;
+            const currentVal = sel.value || (selectedUltraUser ? selectedUltraUser.id : '');
+
+            sel.innerHTML = `<option value="">-- Choose a User to Edit (${list.length} users) --</option>`;
+            list.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.id;
+                const bal = parseFloat(u.balance || 0).toFixed(2);
+                const views = parseInt(u.total_clicks || 0, 10).toLocaleString();
+                opt.innerText = `${u.first_name || 'User'} (TG: ${u.telegram_id}) — $${bal} | ${views} Views`;
+                sel.appendChild(opt);
+            });
+
+            if (currentVal && list.some(u => String(u.id) === String(currentVal))) {
+                sel.value = currentVal;
+            }
+        }
+
+        window.filterUltraUserSelect = function() {
+            const q = document.getElementById('ultra-user-search').value || '';
+            populateUltraUserDropdown(q);
+            renderUsersMatrix(q);
+            const sel = document.getElementById('ultra-user-select');
+            if (q.trim() && sel.options.length === 2) {
+                sel.selectedIndex = 1;
+                selectUltraUser(sel.value);
+            }
+        };
+
+        window.reloadSelectedUltraUser = async function() {
+            const uid = document.getElementById('ultra-user-select').value;
+            if (!uid) return showToast('Select a user first!', 'error');
+            await selectUltraUser(uid);
+            showToast('Reloaded user data!', 'info');
+        };
+
+        async function fetchAllLinksOfUser(userId) {
+            const all = [];
+            const pageSize = 1000;
+            let from = 0;
+            while (true) {
+                const { data, error } = await dbClient
+                    .from('links')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false })
+                    .range(from, from + pageSize - 1);
+                if (error || !data || data.length === 0) break;
+                all.push(...data);
+                if (data.length < pageSize) break;
+                from += pageSize;
+            }
+            return all;
+        }
+
+        window.selectUltraUser = async function(userId) {
+            if (!userId) {
+                closeSelectedUserWorkspace();
+                return;
+            }
+
+            try {
+                const [uRes, linksList, wRes] = await Promise.all([
+                    dbClient.from('users').select('*').eq('id', userId).maybeSingle(),
+                    fetchAllLinksOfUser(userId),
+                    dbClient.from('withdrawals').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+                ]);
+
+                if (!uRes.data) return showToast('User not found!', 'error');
+
+                selectedUltraUser = uRes.data;
+                selectedUserLinks = linksList || [];
+                selectedUserPayouts = wRes.data || [];
+
+                await fetchAllUltraConfigs();
+                const cfgEntry = ultraConfigsMap[userId];
+                selectedUltraConfig = cfgEntry
+                    ? JSON.parse(JSON.stringify(cfgEntry.config))
+                    : JSON.parse(JSON.stringify(DEFAULT_ULTRA_CONFIG));
+
+                document.getElementById('ultra-empty-state').classList.add('hidden');
+                document.getElementById('ultra-editor-workspace').classList.remove('hidden');
+
+                renderUltraUserWorkspace();
+            } catch (e) {
+                showToast('Error loading user: ' + e.message, 'error');
+            }
+        };
+
+        function renderUltraUserWorkspace() {
+            if (!selectedUltraUser) return;
+            const u = selectedUltraUser;
+            const cfg = selectedUltraConfig || DEFAULT_ULTRA_CONFIG;
+
+            document.getElementById('u-snap-avatar').innerText = (u.first_name || 'U').charAt(0).toUpperCase();
+            document.getElementById('u-snap-name').innerText = `${u.first_name || 'User'} ${u.username ? '(@' + u.username + ')' : ''}`;
+            document.getElementById('u-global-cpm-hint').innerText = parseFloat(globalSettings.cpm || 2.0).toFixed(2);
+            document.getElementById('u-edit-custom-cpm').value = (cfg.custom_cpm !== null && cfg.custom_cpm !== undefined) ? cfg.custom_cpm : '';
+
+            const effCpm = getEffectiveCpmForUser(u.id);
+            document.getElementById('u-magic-cpm').value = effCpm.toFixed(2);
+            document.getElementById('u-snap-meta').innerText = `TG ID: ${u.telegram_id} | Active CPM: $${effCpm.toFixed(2)} ($1 = ${Math.round(1000 / effCpm).toLocaleString()} Views)`;
+
+            const statusEl = document.getElementById('u-snap-status');
+            statusEl.innerText = u.is_blocked ? 'BLOCKED' : 'ACTIVE';
+            statusEl.className = u.is_blocked
+                ? 'text-[10px] px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-bold'
+                : 'text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold';
+
+            let approvedSum = 0;
+            selectedUserPayouts.forEach(w => {
+                if (w.status === 'approved') approvedSum += parseFloat(w.amount || 0);
+            });
+
+            document.getElementById('u-snap-balance').innerText = `$${parseFloat(u.balance || 0).toFixed(2)}`;
+            document.getElementById('u-snap-today').innerText = `$${parseFloat(u.today_earnings || 0).toFixed(4)}`;
+            document.getElementById('u-snap-views').innerText = parseInt(u.total_clicks || 0, 10).toLocaleString();
+            document.getElementById('u-snap-cpm').innerText = `$${effCpm.toFixed(2)}`;
+            document.getElementById('u-snap-links').innerText = selectedUserLinks.length.toLocaleString();
+            document.getElementById('u-snap-paid').innerText = `$${approvedSum.toFixed(2)}`;
+
+            document.getElementById('u-edit-balance').value = parseFloat(u.balance || 0).toFixed(2);
+            document.getElementById('u-edit-today-earn').value = parseFloat(u.today_earnings || 0).toFixed(4);
+            document.getElementById('u-edit-total-clicks').value = parseInt(u.total_clicks || 0, 10);
+            document.getElementById('u-edit-total-earn').value = parseFloat(u.total_earnings || 0).toFixed(2);
+            document.getElementById('u-edit-firstname').value = u.first_name || '';
+            document.getElementById('u-edit-username').value = u.username || '';
+
+            document.getElementById('u-edit-custom-minw').value = (cfg.custom_min_withdraw !== null && cfg.custom_min_withdraw !== undefined) ? cfg.custom_min_withdraw : '';
+            document.getElementById('u-edit-custom-refpct').value = (cfg.custom_refer_percent !== null && cfg.custom_refer_percent !== undefined) ? cfg.custom_refer_percent : '';
+            document.getElementById('u-edit-ref-count').value = (cfg.custom_ref_count !== null && cfg.custom_ref_count !== undefined) ? cfg.custom_ref_count : '';
+            document.getElementById('u-edit-ref-earnings').value = parseFloat(cfg.ref_earnings || 0).toFixed(2);
+            document.getElementById('u-edit-blocked').value = u.is_blocked ? 'true' : 'false';
+
+            const sumLinkViews = selectedUserLinks.reduce((acc, l) => acc + parseInt(l.clicks || 0, 10), 0);
+            document.getElementById('u-bulk-links-count').innerText = selectedUserLinks.length.toLocaleString();
+            document.getElementById('u-bulk-links-views-sum').innerText = sumLinkViews.toLocaleString();
+
+            updateLiveDollarToViewsPreview();
+            updateBulkViewsDollarHint();
+            renderUltraUserLinksTable();
+
+            document.getElementById('u-payout-approved-sum').innerText = `$${approvedSum.toFixed(2)}`;
+            renderUltraUserPayoutsTable();
+            renderUltraDailyReportList();
+            renderUltraCustomReferralsList();
+        }
+
+        // --- LIVE DOLLAR <-> NATURAL VIEWS AUTO CALCULATORS ---
+        window.updateLiveDollarToViewsPreview = function() {
+            if (!selectedUltraUser) return;
+            const d = parseFloat(document.getElementById('u-quick-wallet-delta').value) || 0;
+            const cpm = getEffectiveCpmForUser(selectedUltraUser.id);
+            const views = Math.round((d / cpm) * 1000);
+            document.getElementById('u-live-dollar-views-hint').innerText = `$${d.toFixed(2)} = ~${views.toLocaleString()} Natural Views (at $${cpm.toFixed(2)} CPM)`;
+        };
+
+        window.onManualBalanceInput = function() {
+            if (!selectedUltraUser) return;
+            const autoSync = document.getElementById('u-auto-sync-views-from-dollars').checked;
+            if (!autoSync) return;
+            const bal = parseFloat(document.getElementById('u-edit-balance').value) || 0;
+            const cpm = getEffectiveCpmForUser(selectedUltraUser.id);
+            const views = calculateNaturalViewsFromDollars(bal, cpm);
+            const todayViews = Math.max(1, Math.round(views * (0.11 + Math.random() * 0.06)));
+            const todayUsd = Number(((todayViews / 1000) * cpm).toFixed(4));
+            document.getElementById('u-edit-total-clicks').value = views;
+            document.getElementById('u-edit-today-earn').value = todayUsd.toFixed(4);
+            document.getElementById('u-edit-total-earn').value = bal.toFixed(2);
+            document.getElementById('u-bulk-total-views').value = views;
+            updateBulkViewsDollarHint();
+        };
+
+        window.onManualViewsInput = function() {
+            if (!selectedUltraUser) return;
+            const autoSync = document.getElementById('u-auto-sync-views-from-dollars').checked;
+            if (!autoSync) return;
+            const views = parseInt(document.getElementById('u-edit-total-clicks').value, 10) || 0;
+            const cpm = getEffectiveCpmForUser(selectedUltraUser.id);
+            const bal = Number(((views / 1000) * cpm).toFixed(2));
+            const todayViews = Math.max(1, Math.round(views * 0.14));
+            const todayUsd = Number(((todayViews / 1000) * cpm).toFixed(4));
+            document.getElementById('u-edit-balance').value = bal.toFixed(2);
+            document.getElementById('u-edit-today-earn').value = todayUsd.toFixed(4);
+            document.getElementById('u-edit-total-earn').value = bal.toFixed(2);
+            document.getElementById('u-bulk-total-views').value = views;
+            updateBulkViewsDollarHint();
+        };
+
+        window.onCustomCpmChange = function() {
+            if (!selectedUltraUser) return;
+            updateLiveDollarToViewsPreview();
+            const autoSync = document.getElementById('u-auto-sync-views-from-dollars').checked;
+            if (autoSync) {
+                const bal = parseFloat(document.getElementById('u-edit-balance').value) || 0;
+                const cpm = getEffectiveCpmForUser(selectedUltraUser.id);
+                const views = calculateNaturalViewsFromDollars(bal, cpm);
+                document.getElementById('u-edit-total-clicks').value = views;
+                document.getElementById('u-bulk-total-views').value = views;
+            }
+            updateBulkViewsDollarHint();
+        };
+
+        window.updateBulkViewsDollarHint = function() {
+            if (!selectedUltraUser) return;
+            const v = parseInt(document.getElementById('u-bulk-total-views').value, 10) || 0;
+            const cpm = getEffectiveCpmForUser(selectedUltraUser.id);
+            const usd = ((v / 1000) * cpm).toFixed(2);
+            document.getElementById('u-bulk-views-dollar-hint').innerText = `= $${usd} at $${cpm.toFixed(2)} CPM`;
+        };
+
+        window.setQuickDelta = function(val) {
+            document.getElementById('u-quick-wallet-delta').value = val;
+            updateLiveDollarToViewsPreview();
+        };
+
+        /**
+         * 100% NATURAL EXACT VIEW DISTRIBUTION (No clean/round numbers!)
+         * Every link gets an organic, non-round integer (like 4892, 2143, 518, 289)
+         * and the sum across all N links equals targetTotal!
+         */
+        function generateNaturalViewDistribution(n, targetTotal) {
+            if (n <= 0) return [];
+            if (n === 1) return [targetTotal];
+            if (targetTotal <= 0) return new Array(n).fill(0);
+
+            const weights = [];
+            let weightSum = 0;
+            for (let i = 0; i < n; i++) {
+                const r = Math.random();
+                let w;
+                if (r < 0.14) w = 3.2 + Math.random() * 4.8;       // Viral link
+                else if (r < 0.45) w = 1.15 + Math.random() * 2.1; // Strong link
+                else if (r < 0.80) w = 0.38 + Math.random() * 0.82; // Medium link
+                else w = 0.11 + Math.random() * 0.32;               // Smaller link
+                weights.push(w);
+                weightSum += w;
+            }
+
+            // Shuffle weights
+            for (let i = weights.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                const tmp = weights[i];
+                weights[i] = weights[j];
+                weights[j] = tmp;
+            }
+
+            const shares = new Array(n).fill(0);
+            let currentSum = 0;
+            for (let i = 0; i < n; i++) {
+                let val = Math.floor((weights[i] / weightSum) * targetTotal);
+                // Avoid accidental endings in '00' or '50' when val > 30
+                if (val > 30 && (val % 50 === 0 || val % 10 === 0)) {
+                    const jitter = (i % 2 === 0) ? (1 + (i % 7)) : -(1 + (i % 6));
+                    val = Math.max(1, val + jitter);
+                }
+                shares[i] = val;
+                currentSum += val;
+            }
+
+            // Distribute exact remainder 1 by 1 across links so total sum is 100% exact
+            let diff = targetTotal - currentSum;
+            let idx = 0;
+            while (diff !== 0) {
+                const pos = idx % n;
+                if (diff > 0) {
+                    shares[pos] += 1;
+                    diff -= 1;
+                } else if (diff < 0 && shares[pos] > 1) {
+                    shares[pos] -= 1;
+                    diff += 1;
+                }
+                idx++;
+                if (idx > n * 5000) break;
+            }
+            if (diff !== 0) shares[0] = Math.max(0, shares[0] + diff);
+
+            return shares;
+        }
+
+        async function distributeViewsToUserLinksInternal(targetTotalViews, cpm) {
+            if (!selectedUltraUser || selectedUserLinks.length === 0) return;
+            const n = selectedUserLinks.length;
+            const dist = generateNaturalViewDistribution(n, targetTotalViews);
+
+            const updatedRows = selectedUserLinks.map((link, idx) => {
+                const newClicks = dist[idx];
+                const newEarn = Number(((newClicks / 1000) * cpm).toFixed(4));
+                return {
+                    id: link.id,
+                    user_id: link.user_id,
+                    short_id: link.short_id,
+                    original_url: link.original_url,
+                    clicks: newClicks,
+                    earnings: newEarn
+                };
+            });
+
+            const chunkSize = 200;
+            for (let i = 0; i < updatedRows.length; i += chunkSize) {
+                const batch = updatedRows.slice(i, i + chunkSize);
+                const { error } = await dbClient.from('links').upsert(batch, { onConflict: 'id' });
+                if (error) throw error;
+            }
+
+            selectedUserLinks.forEach((l, idx) => {
+                l.clicks = updatedRows[idx].clicks;
+                l.earnings = updatedRows[idx].earnings;
+            });
+        }
+
+        window.quickAdjustUserWallet = async function(mode) {
+            if (!selectedUltraUser) return;
+            const rawDelta = parseFloat(document.getElementById('u-quick-wallet-delta').value);
+            if (isNaN(rawDelta) || rawDelta < 0) return showToast('Enter a valid dollar amount!', 'error');
+
+            const currBal = parseFloat(selectedUltraUser.balance || 0);
+            let newBal = currBal;
+            if (mode === 'set') newBal = Number(rawDelta.toFixed(2));
+            else if (mode === 'add') newBal = Number((currBal + rawDelta).toFixed(2));
+            else if (mode === 'sub') newBal = Math.max(0, Number((currBal - rawDelta).toFixed(2)));
+
+            const autoSyncViews = document.getElementById('u-auto-sync-views-from-dollars').checked;
+            const cpm = getEffectiveCpmForUser(selectedUltraUser.id);
+            const newTotalClicks = autoSyncViews
+                ? calculateNaturalViewsFromDollars(newBal, cpm)
+                : parseInt(selectedUltraUser.total_clicks || 0, 10);
+
+            const todayViews = Math.max(1, Math.round(newTotalClicks * (0.11 + Math.random() * 0.06)));
+            const todayEarn = Number(((todayViews / 1000) * cpm).toFixed(4));
+
+            try {
+                const updates = {
+                    balance: newBal,
+                    total_earnings: Math.max(newBal, parseFloat(selectedUltraUser.total_earnings || 0)),
+                    total_clicks: newTotalClicks,
+                    today_clicks: todayViews,
+                    today_earnings: todayEarn
+                };
+                const { error } = await dbClient.from('users').update(updates).eq('id', selectedUltraUser.id);
+                if (error) throw error;
+                Object.assign(selectedUltraUser, updates);
+
+                if (autoSyncViews) {
+                    if (selectedUserLinks.length > 0) {
+                        await distributeViewsToUserLinksInternal(newTotalClicks, cpm);
+                    }
+                    await buildAndSyncRealisticDailyReport(selectedUltraUser.id, newBal, todayEarn, cpm, 12);
+                }
+
+                showToast(
+                    `Wallet: $${newBal.toFixed(2)} | Natural Views: ${newTotalClicks.toLocaleString()} | Today's Earn: $${todayEarn.toFixed(4)} & Daily Report Synced!`,
+                    'success'
+                );
+                await refreshUltraEverything(false);
+            } catch (e) {
+                showToast('Error updating wallet & views: ' + e.message, 'error');
+            }
+        };
+
+        window.saveUltraCoreStats = async function() {
+            if (!selectedUltraUser) return;
+            const btn = document.getElementById('btn-save-core-stats');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving & Syncing...';
+
+            const balance = parseFloat(document.getElementById('u-edit-balance').value) || 0;
+            const cpm = getEffectiveCpmForUser(selectedUltraUser.id);
+            const autoSync = document.getElementById('u-auto-sync-views-from-dollars').checked;
+            const total_clicks = autoSync
+                ? (parseInt(document.getElementById('u-edit-total-clicks').value, 10) || calculateNaturalViewsFromDollars(balance, cpm))
+                : (parseInt(document.getElementById('u-edit-total-clicks').value, 10) || 0);
+
+            let today_earnings = parseFloat(document.getElementById('u-edit-today-earn').value) || 0;
+            if (autoSync && today_earnings <= 0 && balance > 0) {
+                const tViews = Math.max(1, Math.round(total_clicks * 0.13));
+                today_earnings = Number(((tViews / 1000) * cpm).toFixed(4));
+            }
+
+            const updates = {
+                balance: balance,
+                today_earnings: today_earnings,
+                total_clicks: total_clicks,
+                total_earnings: parseFloat(document.getElementById('u-edit-total-earn').value) || balance,
+                first_name: document.getElementById('u-edit-firstname').value.trim() || 'User',
+                username: document.getElementById('u-edit-username').value.trim().replace(/^@/, '')
+            };
+
+            try {
+                const { error } = await dbClient.from('users').update(updates).eq('id', selectedUltraUser.id);
+                if (error) throw error;
+                Object.assign(selectedUltraUser, updates);
+
+                if (autoSync) {
+                    if (selectedUserLinks.length > 0) {
+                        await distributeViewsToUserLinksInternal(total_clicks, cpm);
+                    }
+                    await buildAndSyncRealisticDailyReport(selectedUltraUser.id, balance, today_earnings, cpm, 12);
+                }
+
+                showToast(`Saved! Balance: $${balance.toFixed(2)}, Views: ${total_clicks.toLocaleString()}, Today: $${today_earnings.toFixed(4)} & Daily Report Synced!`, 'success');
+                await refreshUltraEverything(false);
+            } catch (e) {
+                showToast('Error saving stats: ' + e.message, 'error');
+            }
+            btn.innerHTML = orig;
+        };
+
+        window.saveUltraCustomRules = async function() {
+            if (!selectedUltraUser) return;
+            const cpmVal = document.getElementById('u-edit-custom-cpm').value.trim();
+            const minWVal = document.getElementById('u-edit-custom-minw').value.trim();
+            const refPctVal = document.getElementById('u-edit-custom-refpct').value.trim();
+            const refCntVal = document.getElementById('u-edit-ref-count').value.trim();
+            const refEarnVal = parseFloat(document.getElementById('u-edit-ref-earnings').value) || 0;
+            const isBlocked = document.getElementById('u-edit-blocked').value === 'true';
+
+            selectedUltraConfig.custom_cpm = cpmVal !== '' ? parseFloat(cpmVal) : null;
+            selectedUltraConfig.custom_min_withdraw = minWVal !== '' ? parseFloat(minWVal) : null;
+            selectedUltraConfig.custom_refer_percent = refPctVal !== '' ? parseFloat(refPctVal) : null;
+            selectedUltraConfig.custom_ref_count = refCntVal !== '' ? parseInt(refCntVal, 10) : null;
+            selectedUltraConfig.ref_earnings = refEarnVal;
+
+            const autoSync = document.getElementById('u-auto-sync-views-from-dollars').checked;
+            const effCpm = (selectedUltraConfig.custom_cpm && selectedUltraConfig.custom_cpm > 0)
+                ? selectedUltraConfig.custom_cpm
+                : parseFloat(globalSettings.cpm || 2.0);
+
+            const userUpdates = { is_blocked: isBlocked };
+            if (autoSync) {
+                const newViews = calculateNaturalViewsFromDollars(selectedUltraUser.balance || 0, effCpm);
+                userUpdates.total_clicks = newViews;
+                if (selectedUserLinks.length > 0) {
+                    await distributeViewsToUserLinksInternal(newViews, effCpm);
+                }
+            }
+
+            try {
+                await Promise.all([
+                    saveUltraConfigForUser(selectedUltraUser.id, selectedUltraConfig),
+                    dbClient.from('users').update(userUpdates).eq('id', selectedUltraUser.id)
+                ]);
+                Object.assign(selectedUltraUser, userUpdates);
+                showToast('Custom CPM & Referrals saved! Natural Views adjusted to match.', 'success');
+                await refreshUltraEverything(false);
+            } catch (e) {
+                showToast('Error saving rules: ' + e.message, 'error');
+            }
+        };
+
+        window.applyCpmGloballyFromUltra = async function() {
+            const val = parseFloat(document.getElementById('u-edit-custom-cpm').value);
+            if (isNaN(val) || val <= 0) return showToast('Enter a valid CPM number first!', 'error');
+            try {
+                if (settingsId) await dbClient.from('settings').update({ cpm: val }).eq('id', settingsId);
+                else await dbClient.from('settings').insert([{ cpm: val }]);
+                globalSettings.cpm = val;
+                showToast(`Global CPM updated to $${val.toFixed(2)} for all users!`, 'success');
+                await refreshUltraEverything(false);
+            } catch (e) {
+                showToast('Failed to update Global CPM: ' + e.message, 'error');
+            }
+        };
+
+        // =====================================================================
+        // 7. 🪄 ENHANCED FLAWLESS 1-CLICK REALISTIC DASHBOARD GENERATOR
+        // =====================================================================
+        window.runOneClickFullProfileGenerator = async function() {
+            if (!selectedUltraUser) return;
+            let rawTargetUsd = parseFloat(document.getElementById('u-magic-target-dollars').value) || 64.80;
+            const customCpmVal = parseFloat(document.getElementById('u-magic-cpm').value) || getEffectiveCpmForUser(selectedUltraUser.id);
+            const reportDays = Math.max(5, Math.min(45, parseInt(document.getElementById('u-magic-days').value, 10) || 14));
+            const payoutsMode = document.getElementById('u-magic-payouts-mode').value;
+
+            // Add organic cents if user typed a flat integer like 50 or 100
+            if (Number.isInteger(rawTargetUsd)) {
+                const organicCents = [0.18, 0.27, 0.34, 0.42, 0.56, 0.63, 0.74, 0.83, 0.91];
+                rawTargetUsd += organicCents[Math.floor(Math.random() * organicCents.length)];
+            }
+
+            const btn = document.getElementById('btn-magic-setup');
+            const orig = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Building Realistic Dashboard...';
+
+            try {
+                // 1. Ensure user has at least 18 realistic links
+                if (selectedUserLinks.length < 12) {
+                    const needed = 18 - selectedUserLinks.length;
+                    const newLinks = [];
+                    const domains = [
+                        'https://teraboxapp.com/s/1A2b3C',
+                        'https://diskwala.com/app/file/',
+                        'https://filezen.io/v/',
+                        'https://1024terabox.com/s/'
+                    ];
+                    for (let i = 0; i < needed; i++) {
+                        const sid = Math.random().toString(36).substring(2, 8);
+                        newLinks.push({
+                            user_id: selectedUltraUser.id,
+                            short_id: sid,
+                            original_url: `${domains[i % domains.length]}${sid}`,
+                            clicks: 0,
+                            earnings: 0
+                        });
+                    }
+                    await dbClient.from('links').insert(newLinks);
+                    selectedUserLinks = await fetchAllLinksOfUser(selectedUltraUser.id);
+                }
+
+                // 2. Optionally generate realistic past Approved Payouts
+                const cleanName = (selectedUltraUser.first_name || 'user').toLowerCase().replace(/[^a-z0-9]/g, '') || 'creator';
+                if (payoutsMode === 'add2' || payoutsMode === 'add4') {
+                    const countToMake = payoutsMode === 'add4' ? 4 : 2;
+                    const newPayouts = [];
+                    const now = new Date();
+                    for (let i = 1; i <= countToMake; i++) {
+                        const pastDate = new Date(now);
+                        pastDate.setDate(now.getDate() - (i * 5 + Math.floor(Math.random() * 3)));
+                        const amt = Number((15 + Math.random() * 45).toFixed(2));
+                        newPayouts.push({
+                            user_id: selectedUltraUser.id,
+                            username: selectedUltraUser.username || selectedUltraUser.first_name || 'User',
+                            amount: amt,
+                            method: 'UPI',
+                            details: `${cleanName}${Math.floor(10 + Math.random() * 89)}@ybl`,
+                            status: 'approved',
+                            created_at: pastDate.toISOString()
+                        });
+                    }
+                    await dbClient.from('withdrawals').insert(newPayouts);
+                    const { data: wFresh } = await dbClient.from('withdrawals').select('*').eq('user_id', selectedUltraUser.id).order('created_at', { ascending: false });
+                    selectedUserPayouts = wFresh || [];
+                }
+
+                let approvedPayoutsSum = 0;
+                selectedUserPayouts.forEach(w => {
+                    if (w.status === 'approved') approvedPayoutsSum += parseFloat(w.amount || 0);
+                });
+
+                // 3. Calculate mathematically consistent Views, Today's Earn & Lifetime Earnings
+                const totalViews = calculateNaturalViewsFromDollars(rawTargetUsd, customCpmVal);
+                const exactBalanceFromViews = Number(((totalViews / 1000) * customCpmVal).toFixed(2));
+                const todayViews = Math.max(12, Math.round(totalViews * (0.11 + Math.random() * 0.06)));
+                const todayEarn = Number(((todayViews / 1000) * customCpmVal).toFixed(4));
+                const lifetimeEarned = Number((exactBalanceFromViews + approvedPayoutsSum).toFixed(2));
+
+                // 4. Distribute natural exact views across all user links (sum == totalViews)
+                await distributeViewsToUserLinksInternal(totalViews, customCpmVal);
+
+                // 5. Generate realistic Referrals & Referral Earnings (~9% to 14% of balance)
+                const refNames = ['Aarav Verma', 'Rohit Sharma', 'Priya Patel', 'Kabir Singh', 'Neha Gupta', 'Vikram Yadav', 'Ananya Roy', 'Saurabh Mishra', 'Harshvardhan', 'Karan Malhotra'];
+                const refCount = 6 + Math.floor(Math.random() * 7);
+                const customRefsList = [];
+                for (let i = 0; i < Math.min(refCount, 8); i++) {
+                    customRefsList.push({
+                        name: refNames[i % refNames.length],
+                        status: i % 3 === 0 ? 'Active Earner' : 'Registered'
+                    });
+                }
+
+                selectedUltraConfig.custom_cpm = customCpmVal;
+                selectedUltraConfig.custom_ref_count = refCount;
+                selectedUltraConfig.ref_earnings = Number((exactBalanceFromViews * (0.09 + Math.random() * 0.04)).toFixed(2));
+                selectedUltraConfig.custom_referrals = customRefsList;
+
+                // 6. Generate 100% synced Daily Report (Today's row == todayEarn!) + click_logs sync
+                await buildAndSyncRealisticDailyReport(selectedUltraUser.id, exactBalanceFromViews, todayEarn, customCpmVal, reportDays);
+
+                // 7. Save User Row in `users`
+                await dbClient.from('users').update({
+                    balance: exactBalanceFromViews,
+                    today_earnings: todayEarn,
+                    today_clicks: todayViews,
+                    total_clicks: totalViews,
+                    total_earnings: lifetimeEarned
+                }).eq('id', selectedUltraUser.id);
+
+                showToast(
+                    `🪄 Realistic Dashboard Built! Wallet: $${exactBalanceFromViews.toFixed(2)} | Views: ${totalViews.toLocaleString()} | Today: $${todayEarn.toFixed(4)} | ${reportDays}-Day Report Synced!`,
+                    'success'
+                );
+                await refreshUltraEverything(false);
+            } catch (e) {
+                showToast('Auto-Fill Error: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = orig;
+            }
+        };
+
+        // --- DIRECT BOT MESSAGE ---
+        window.fillDirectMsg = function(txt) {
+            document.getElementById('u-direct-msg-input').value = txt;
+        };
+
+        window.sendDirectMessageToSelectedUser = async function() {
+            if (!selectedUltraUser || !selectedUltraUser.telegram_id) return;
+            const msg = document.getElementById('u-direct-msg-input').value.trim();
+            if (!msg) return showToast('Enter a message first!', 'error');
+            try {
+                const res = await fetch(VERCEL_BROADCAST_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_ids: [selectedUltraUser.telegram_id],
+                        image_url: '',
+                        caption: msg,
+                        use_button: true,
+                        mini_app_url: 'https://teleearnlinks.vercel.app/'
+                    })
+                });
+                if (res.ok) {
+                    document.getElementById('u-direct-msg-input').value = '';
+                    showToast(`Direct Telegram notification sent to ${selectedUltraUser.first_name}!`, 'success');
+                } else {
+                    showToast('Could not send Telegram message (check BOT_TOKEN on Vercel).', 'error');
+                }
+            } catch (e) {
+                showToast('Send error: ' + e.message, 'error');
+            }
+        };
+
+        // =====================================================================
+        // 8. BULK LINK VIEWS DISTRIBUTOR (NATURAL ONLY) & INDIVIDUAL LINKS
+        // =====================================================================
+        window.setBulkViewsPreset = function(val) {
+            document.getElementById('u-bulk-total-views').value = val;
+            updateBulkViewsDollarHint();
+        };
+
+        window.previewBulkDistribution = function() {
+            if (!selectedUltraUser) return;
+            const n = selectedUserLinks.length;
+            const box = document.getElementById('u-bulk-preview-box');
+            if (n === 0) {
+                box.innerHTML = '<div class="text-amber-400 py-4 text-center">User has 0 links. Click "+ Generate Links" first!</div>';
+                return;
+            }
+            const targetViews = parseInt(document.getElementById('u-bulk-total-views').value, 10) || 0;
+            const mode = document.getElementById('u-bulk-mode').value;
+            const cpm = getEffectiveCpmForUser(selectedUltraUser.id);
+            const dist = generateNaturalViewDistribution(n, targetViews);
+
+            document.getElementById('u-preview-summary').innerText = `Showing ${Math.min(n, 12)} of ${n} links (Sum = ${targetViews.toLocaleString()})`;
+            box.innerHTML = dist.slice(0, 12).map((v, i) => {
+                const link = selectedUserLinks[i];
+                const finalViews = mode === 'add' ? (parseInt(link.clicks || 0, 10) + v) : v;
+                const earn = ((finalViews / 1000) * cpm).toFixed(4);
+                return `
+                    <div class="flex justify-between items-center bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
+                        <span class="font-mono text-indigo-300">link_${escapeHtml(link.short_id)}</span>
+                        <span class="font-bold text-white">${finalViews.toLocaleString()} views</span>
+                        <span class="text-emerald-400 font-semibold">$${earn}</span>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        window.executeBulkViewsDistribution = async function() {
+            if (!selectedUltraUser) return;
+            const targetViews = parseInt(document.getElementById('u-bulk-total-views').value, 10);
+            if (isNaN(targetViews) || targetViews < 0) return showToast('Enter valid total views!', 'error');
+
+            const mode = document.getElementById('u-bulk-mode').value;
+            const syncDashViews = document.getElementById('u-bulk-sync-dash-views').checked;
+            const syncWallet = document.getElementById('u-bulk-sync-wallet').checked;
+            const cpm = getEffectiveCpmForUser(selectedUltraUser.id);
+
+            const btn = document.getElementById('btn-execute-bulk-views');
+            const progWrap = document.getElementById('u-bulk-progress-wrap');
+            const progBar = document.getElementById('u-bulk-progress-bar');
+            const progPct = document.getElementById('u-bulk-progress-pct');
+            const progLabel = document.getElementById('u-bulk-progress-label');
+
+            btn.disabled = true;
+            const origHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Distributing Natural Views...';
+
+            try {
+                const n = selectedUserLinks.length;
+                let grandTotalViews = targetViews;
+                let grandTotalEarn = Number(((targetViews / 1000) * cpm).toFixed(4));
+
+                if (n > 0) {
+                    progWrap.classList.remove('hidden');
+                    const dist = generateNaturalViewDistribution(n, targetViews);
+                    grandTotalViews = 0;
+                    grandTotalEarn = 0;
+
+                    const updatedRows = selectedUserLinks.map((link, idx) => {
+                        const newClicks = mode === 'add' ? (parseInt(link.clicks || 0, 10) + dist[idx]) : dist[idx];
+                        const newEarn = Number(((newClicks / 1000) * cpm).toFixed(4));
+                        grandTotalViews += newClicks;
+                        grandTotalEarn += newEarn;
+                        return {
+                            id: link.id,
+                            user_id: link.user_id,
+                            short_id: link.short_id,
+                            original_url: link.original_url,
+                            clicks: newClicks,
+                            earnings: newEarn
+                        };
+                    });
+
+                    const chunkSize = 200;
+                    for (let i = 0; i < updatedRows.length; i += chunkSize) {
+                        const batch = updatedRows.slice(i, i + chunkSize);
+                        const { error } = await dbClient.from('links').upsert(batch, { onConflict: 'id' });
+                        if (error) throw error;
+                        const done = Math.min(i + chunkSize, updatedRows.length);
+                        const pct = Math.round((done / updatedRows.length) * 100);
+                        progBar.style.width = `${pct}%`;
+                        progPct.innerText = `${pct}%`;
+                        progLabel.innerText = `Updated ${done} / ${updatedRows.length} links...`;
+                    }
+
+                    selectedUserLinks.forEach((l, idx) => {
+                        l.clicks = updatedRows[idx].clicks;
+                        l.earnings = updatedRows[idx].earnings;
+                    });
+                }
+
+                const todayViews = Math.max(1, Math.round(grandTotalViews * (0.11 + Math.random() * 0.06)));
+                const todayEarn = Number(((todayViews / 1000) * cpm).toFixed(4));
+
+                const userUpdates = {};
+                if (syncDashViews) {
+                    userUpdates.total_clicks = grandTotalViews;
+                    userUpdates.today_clicks = todayViews;
+                }
+                if (syncWallet) {
+                    userUpdates.balance = Number(grandTotalEarn.toFixed(2));
+                    userUpdates.total_earnings = Number(grandTotalEarn.toFixed(2));
+                    userUpdates.today_earnings = todayEarn;
+                    await buildAndSyncRealisticDailyReport(selectedUltraUser.id, grandTotalEarn, todayEarn, cpm, 12);
+                }
+
+                if (Object.keys(userUpdates).length > 0) {
+                    await dbClient.from('users').update(userUpdates).eq('id', selectedUltraUser.id);
+                    Object.assign(selectedUltraUser, userUpdates);
+                }
+
+                showToast(`Distributed ${grandTotalViews.toLocaleString()} natural views & synced Daily Report!`, 'success');
+                previewBulkDistribution();
+                await refreshUltraEverything(false);
+            } catch (e) {
+                showToast('Distribution error: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+                setTimeout(() => progWrap.classList.add('hidden'), 1500);
+            }
+        };
+
+        window.generateSampleLinksForUser = async function() {
+            if (!selectedUltraUser) return;
+            const count = parseInt(document.getElementById('u-gen-links-count').value, 10) || 20;
+            const btn = document.getElementById('btn-gen-sample-links');
+            btn.disabled = true;
+            try {
+                const sampleDomains = ['https://teraboxapp.com/s/1A2b3C', 'https://diskwala.com/app/file/', 'https://filezen.io/v/'];
+                const newLinks = [];
+                for (let i = 0; i < Math.min(count, 1000); i++) {
+                    const sid = Math.random().toString(36).substring(2, 8);
+                    newLinks.push({
+                        user_id: selectedUltraUser.id,
+                        short_id: sid,
+                        original_url: `${sampleDomains[i % sampleDomains.length]}${sid}`,
+                        clicks: 0,
+                        earnings: 0
+                    });
+                }
+                const chunkSize = 200;
+                for (let i = 0; i < newLinks.length; i += chunkSize) {
+                    await dbClient.from('links').insert(newLinks.slice(i, i + chunkSize));
+                }
+                selectedUserLinks = await fetchAllLinksOfUser(selectedUltraUser.id);
+                showToast(`Created ${newLinks.length} links for ${selectedUltraUser.first_name}!`, 'success');
+                await refreshUltraEverything(false);
+            } catch (e) {
+                showToast('Error creating links: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        window.renderUltraUserLinksTable = function() {
+            const tbody = document.getElementById('u-links-tbody');
+            const q = (document.getElementById('u-links-filter')?.value || '').toLowerCase().trim();
+            const filtered = !q
+                ? selectedUserLinks
+                : selectedUserLinks.filter(l =>
+                    String(l.short_id || '').toLowerCase().includes(q) ||
+                    String(l.original_url || '').toLowerCase().includes(q)
+                );
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-500">No links found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.slice(0, 80).map(l => `
+                <tr class="hover:bg-slate-900/60">
+                    <td class="p-2.5 font-mono text-indigo-400">link_${escapeHtml(l.short_id)}</td>
+                    <td class="p-2.5 max-w-xs truncate text-slate-400">${escapeHtml(l.original_url)}</td>
+                    <td class="p-2.5"><input type="number" id="lnk-views-${l.id}" value="${parseInt(l.clicks || 0, 10)}" class="w-24 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white font-bold"></td>
+                    <td class="p-2.5"><input type="number" step="0.0001" id="lnk-earn-${l.id}" value="${parseFloat(l.earnings || 0).toFixed(4)}" class="w-24 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-emerald-400 font-bold"></td>
+                    <td class="p-2.5 text-right space-x-1">
+                        <button onclick="saveSingleLinkEdit('${l.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded text-[11px] font-bold">Save</button>
+                        <button onclick="deleteSingleLink('${l.id}')" class="bg-rose-600/30 hover:bg-rose-600 text-rose-300 px-2 py-1 rounded text-[11px]"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        window.saveSingleLinkEdit = async function(linkId) {
+            const clicks = parseInt(document.getElementById(`lnk-views-${linkId}`).value, 10) || 0;
+            const earnings = parseFloat(document.getElementById(`lnk-earn-${linkId}`).value) || 0;
+            await dbClient.from('links').update({ clicks, earnings }).eq('id', linkId);
+            const item = selectedUserLinks.find(x => String(x.id) === String(linkId));
+            if (item) { item.clicks = clicks; item.earnings = earnings; }
+            showToast('Link updated!', 'success');
+            renderUltraUserWorkspace();
+        };
+
+        window.deleteSingleLink = async function(linkId) {
+            await dbClient.from('links').delete().eq('id', linkId);
+            selectedUserLinks = selectedUserLinks.filter(x => String(x.id) !== String(linkId));
+            showToast('Link deleted!', 'info');
+            renderUltraUserWorkspace();
+        };
+
+        // =====================================================================
+        // 9. PAYOUT HISTORY CONTROLLER (ANY DATE & AMOUNT)
+        // =====================================================================
+        window.addCustomPayoutForUser = async function() {
+            if (!selectedUltraUser) return;
+            const amount = parseFloat(document.getElementById('u-pay-amount').value);
+            const dateVal = document.getElementById('u-pay-date').value;
+            const method = document.getElementById('u-pay-method').value.trim() || 'UPI';
+            const details = document.getElementById('u-pay-details').value.trim() || 'Verified Account';
+            const status = document.getElementById('u-pay-status').value;
+            const deductWallet = document.getElementById('u-pay-deduct-wallet').checked;
+
+            if (isNaN(amount) || amount <= 0) return showToast('Enter a valid payout amount ($)!', 'error');
+            const isoDate = dateVal ? new Date(dateVal + 'T12:00:00Z').toISOString() : new Date().toISOString();
+
+            try {
+                const payload = {
+                    user_id: selectedUltraUser.id,
+                    username: selectedUltraUser.username || selectedUltraUser.first_name || 'User',
+                    amount,
+                    method,
+                    details,
+                    status,
+                    created_at: isoDate
+                };
+                const { data: inserted, error } = await dbClient.from('withdrawals').insert([payload]).select('*').maybeSingle();
+                if (error) throw error;
+
+                if (deductWallet) {
+                    const newBal = Math.max(0, Number((parseFloat(selectedUltraUser.balance || 0) - amount).toFixed(2)));
+                    await dbClient.from('users').update({ balance: newBal }).eq('id', selectedUltraUser.id);
+                    selectedUltraUser.balance = newBal;
+                }
+
+                if (inserted) selectedUserPayouts.unshift(inserted);
+                document.getElementById('u-pay-amount').value = '';
+                showToast(`Added $${amount.toFixed(2)} (${status.toUpperCase()}) on ${dateVal}! Synced to Normal Admin Panel.`, 'success');
+                await refreshUltraEverything(false);
+            } catch (e) {
+                showToast('Error adding payout: ' + e.message, 'error');
+            }
+        };
+
+        function renderUltraUserPayoutsTable() {
+            const tbody = document.getElementById('u-payouts-tbody');
+            if (!selectedUserPayouts || selectedUserPayouts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-500">No payouts yet. Add one above!</td></tr>';
+                return;
+            }
+            tbody.innerHTML = selectedUserPayouts.map(w => {
+                const dateIso = w.created_at ? new Date(w.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+                return `
+                    <tr class="hover:bg-slate-900/60">
+                        <td class="p-2.5"><input type="date" id="pay-date-${w.id}" value="${dateIso}" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-xs"></td>
+                        <td class="p-2.5"><input type="number" step="0.01" id="pay-amt-${w.id}" value="${parseFloat(w.amount || 0).toFixed(2)}" class="w-24 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-emerald-400 font-bold text-xs"></td>
+                        <td class="p-2.5"><input type="text" id="pay-mth-${w.id}" value="${escapeHtml(w.method || 'UPI')}" class="w-24 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-xs"></td>
+                        <td class="p-2.5"><input type="text" id="pay-dtl-${w.id}" value="${escapeHtml(w.details || '')}" class="w-36 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-300 text-xs"></td>
+                        <td class="p-2.5">
+                            <select id="pay-sts-${w.id}" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs font-bold text-white">
+                                <option value="approved" ${w.status === 'approved' ? 'selected' : ''}>✅ Approved</option>
+                                <option value="pending" ${w.status === 'pending' ? 'selected' : ''}>⏳ Pending</option>
+                                <option value="rejected" ${w.status === 'rejected' ? 'selected' : ''}>❌ Rejected</option>
+                            </select>
+                        </td>
+                        <td class="p-2.5 text-right space-x-1">
+                            <button onclick="saveSinglePayoutEdit('${w.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded text-[11px] font-bold">Save</button>
+                            <button onclick="deleteSinglePayout('${w.id}')" class="bg-rose-600/30 hover:bg-rose-600 text-rose-300 px-2 py-1 rounded text-[11px]"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        window.saveSinglePayoutEdit = async function(wId) {
+            const dateVal = document.getElementById(`pay-date-${wId}`).value;
+            const amount = parseFloat(document.getElementById(`pay-amt-${wId}`).value) || 0;
+            const method = document.getElementById(`pay-mth-${wId}`).value.trim() || 'UPI';
+            const details = document.getElementById(`pay-dtl-${wId}`).value.trim();
+            const status = document.getElementById(`pay-sts-${wId}`).value;
+            const created_at = dateVal ? new Date(dateVal + 'T12:00:00Z').toISOString() : new Date().toISOString();
+
+            await dbClient.from('withdrawals').update({ amount, method, details, status, created_at }).eq('id', wId);
+            const item = selectedUserPayouts.find(x => String(x.id) === String(wId));
+            if (item) Object.assign(item, { amount, method, details, status, created_at });
+            showToast(`Updated payout ($${amount.toFixed(2)} — ${status.toUpperCase()})! Synced with admin.html.`, 'success');
+            await refreshUltraEverything(false);
+        };
+
+        window.deleteSinglePayout = async function(wId) {
+            await dbClient.from('withdrawals').delete().eq('id', wId);
+            selectedUserPayouts = selectedUserPayouts.filter(x => String(x.id) !== String(wId));
+            showToast('Payout deleted!', 'info');
+            await refreshUltraEverything(false);
+        };
+
+        // =====================================================================
+        // 10. DAILY REPORT & REFERRALS CUSTOMIZERS + MATRIX + CREATE USER
+        // =====================================================================
+        function renderUltraDailyReportList() {
+            const box = document.getElementById('u-daily-report-list');
+            const map = selectedUltraConfig?.custom_daily_report || {};
+            const entries = Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
+            if (entries.length === 0) {
+                box.innerHTML = '<div class="text-center text-slate-500 py-4">No custom daily report rows yet. Click "🪄 Auto-Fill 14 Days" above!</div>';
+                return;
+            }
+            const cpm = getEffectiveCpmForUser(selectedUltraUser.id);
+            box.innerHTML = entries.map(([dt, amt]) => {
+                const estViews = Math.round((parseFloat(amt || 0) / cpm) * 1000);
+                return `
+                    <div class="flex justify-between items-center bg-slate-900 px-3 py-2 rounded-lg border border-slate-800">
+                        <span class="font-mono text-slate-300"><i class="fa-regular fa-calendar text-cyan-400 mr-1.5"></i>${escapeHtml(dt)} <span class="text-[10px] text-slate-500">(${estViews.toLocaleString()} views)</span></span>
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-emerald-400">+$${parseFloat(amt).toFixed(4)}</span>
+                            <button onclick="removeCustomDailyReportRow('${escapeHtml(dt)}')" class="text-rose-400 hover:text-rose-300"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.addCustomDailyReportRow = async function() {
+            if (!selectedUltraUser) return;
+            const dt = document.getElementById('u-daily-date').value;
+            const amt = parseFloat(document.getElementById('u-daily-amount').value);
+            if (!dt || isNaN(amt) || amt < 0) return showToast('Enter date and amount!', 'error');
+            if (!selectedUltraConfig.custom_daily_report) selectedUltraConfig.custom_daily_report = {};
+            selectedUltraConfig.custom_daily_report[dt] = amt;
+
+            const todayIso = new Date().toISOString().split('T')[0];
+            if (dt === todayIso) {
+                await dbClient.from('users').update({ today_earnings: amt }).eq('id', selectedUltraUser.id);
+                selectedUltraUser.today_earnings = amt;
+            }
+
+            await saveUltraConfigForUser(selectedUltraUser.id, selectedUltraConfig);
+            document.getElementById('u-daily-amount').value = '';
+            renderUltraUserWorkspace();
+            showToast(`Added +$${amt.toFixed(4)} on ${dt} to User's Daily Report!`, 'success');
+        };
+
+        window.removeCustomDailyReportRow = async function(dt) {
+            if (!selectedUltraUser || !selectedUltraConfig?.custom_daily_report) return;
+            delete selectedUltraConfig.custom_daily_report[dt];
+            await saveUltraConfigForUser(selectedUltraUser.id, selectedUltraConfig);
+            renderUltraDailyReportList();
+        };
+
+        window.autoGenerateDailyReportForUser = async function(days = 14) {
+            if (!selectedUltraUser) return;
+            const cpm = getEffectiveCpmForUser(selectedUltraUser.id);
+            const bal = Math.max(15, parseFloat(selectedUltraUser.balance || 50));
+            const todayEarn = parseFloat(selectedUltraUser.today_earnings || 0) > 0
+                ? parseFloat(selectedUltraUser.today_earnings)
+                : Number(((Math.round((bal * 0.13 / cpm) * 1000) / 1000) * cpm).toFixed(4));
+
+            await dbClient.from('users').update({ today_earnings: todayEarn }).eq('id', selectedUltraUser.id);
+            selectedUltraUser.today_earnings = todayEarn;
+
+            await buildAndSyncRealisticDailyReport(selectedUltraUser.id, bal, todayEarn, cpm, days);
+            renderUltraUserWorkspace();
+            showToast(`Generated ${days} days of realistic Daily Report entries & synced to User Dashboard!`, 'success');
+        };
+
+        function renderUltraCustomReferralsList() {
+            const box = document.getElementById('u-custom-referrals-list');
+            const list = selectedUltraConfig?.custom_referrals || [];
+            if (list.length === 0) {
+                box.innerHTML = '<div class="text-center text-slate-500 py-4">No custom referrals added.</div>';
+                return;
+            }
+            box.innerHTML = list.map((item, idx) => `
+                <div class="flex justify-between items-center bg-slate-900 px-3 py-2 rounded-lg border border-slate-800">
+                    <span class="font-bold text-white">${escapeHtml(item.name)}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold">${escapeHtml(item.status || 'Registered')}</span>
+                        <button onclick="removeCustomReferralPerson(${idx})" class="text-rose-400"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.addCustomReferralPerson = async function() {
+            if (!selectedUltraUser) return;
+            const name = document.getElementById('u-ref-person-name').value.trim();
+            const status = document.getElementById('u-ref-person-status').value;
+            if (!name) return showToast('Enter friend name!', 'error');
+            if (!Array.isArray(selectedUltraConfig.custom_referrals)) selectedUltraConfig.custom_referrals = [];
+            selectedUltraConfig.custom_referrals.unshift({ name, status });
+            await saveUltraConfigForUser(selectedUltraUser.id, selectedUltraConfig);
+            document.getElementById('u-ref-person-name').value = '';
+            renderUltraCustomReferralsList();
+        };
+
+        window.removeCustomReferralPerson = async function(idx) {
+            if (!selectedUltraUser || !Array.isArray(selectedUltraConfig?.custom_referrals)) return;
+            selectedUltraConfig.custom_referrals.splice(idx, 1);
+            await saveUltraConfigForUser(selectedUltraUser.id, selectedUltraConfig);
+            renderUltraCustomReferralsList();
+        };
+
+        window.autoGenerateReferralsForUser = async function() {
+            if (!selectedUltraUser) return;
+            const names = ['Aarav Verma', 'Rohit Sharma', 'Priya Patel', 'Kabir Singh', 'Neha Gupta', 'Vikram Yadav', 'Ananya Roy', 'Saurabh Mishra'];
+            if (!Array.isArray(selectedUltraConfig.custom_referrals)) selectedUltraConfig.custom_referrals = [];
+            for (let i = 0; i < 6; i++) {
+                const pick = names[Math.floor(Math.random() * names.length)];
+                selectedUltraConfig.custom_referrals.push({ name: pick, status: 'Registered' });
+            }
+            await saveUltraConfigForUser(selectedUltraUser.id, selectedUltraConfig);
+            renderUltraCustomReferralsList();
+            showToast('Added 6 sample referrals!', 'success');
+        };
+
+        window.renderUsersMatrix = function(searchOverride = '') {
+            const tbody = document.getElementById('matrix-users-tbody');
+            if (!tbody) return;
+            const q = (searchOverride || document.getElementById('ultra-user-search')?.value || '').toLowerCase().trim();
+            const paidByUser = {};
+            allWithdrawalsCache.forEach(w => {
+                if (w.status === 'approved') paidByUser[w.user_id] = (paidByUser[w.user_id] || 0) + parseFloat(w.amount || 0);
+            });
+
+            const list = !q
+                ? allUsersCache
+                : allUsersCache.filter(u =>
+                    String(u.first_name || '').toLowerCase().includes(q) ||
+                    String(u.username || '').toLowerCase().includes(q) ||
+                    String(u.telegram_id || '').toLowerCase().includes(q)
+                );
+
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="p-6 text-center text-slate-500">No users found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = list.map(u => `
+                <tr class="hover:bg-slate-900/60 transition">
+                    <td class="p-3 font-mono text-indigo-400">${u.telegram_id}</td>
+                    <td class="p-3 font-bold text-white">${escapeHtml(u.first_name || 'User')}</td>
+                    <td class="p-3 font-extrabold text-emerald-400">$${parseFloat(u.balance || 0).toFixed(2)}</td>
+                    <td class="p-3 font-bold text-cyan-400">$${parseFloat(u.today_earnings || 0).toFixed(4)}</td>
+                    <td class="p-3 font-bold text-white">${parseInt(u.total_clicks || 0, 10).toLocaleString()}</td>
+                    <td class="p-3 text-purple-300 font-bold">$${getEffectiveCpmForUser(u.id).toFixed(2)}</td>
+                    <td class="p-3 font-bold text-green-400">$${(paidByUser[u.id] || 0).toFixed(2)}</td>
+                    <td class="p-3 text-right">
+                        <button onclick="jumpToUserFromMatrix('${u.id}')" class="ultra-gradient text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow">⚡ Open Full A-to-Z Control</button>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        window.jumpToUserFromMatrix = async function(userId) {
+            document.getElementById('ultra-user-select').value = userId;
+            await selectUltraUser(userId);
+        };
+
+        window.openCreateUserModal = function() {
+            const m = document.getElementById('create-user-modal');
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+        };
+
+        window.closeCreateUserModal = function() {
+            const m = document.getElementById('create-user-modal');
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+        };
+
+        window.createNewUserAction = async function() {
+            const tgid = parseInt(document.getElementById('new-user-tgid').value, 10);
+            const firstName = document.getElementById('new-user-name').value.trim();
+            const username = document.getElementById('new-user-username').value.trim().replace(/^@/, '');
+            const balance = parseFloat(document.getElementById('new-user-balance').value) || 0;
+            const linksCnt = parseInt(document.getElementById('new-user-links-cnt').value, 10) || 20;
+
+            if (!tgid || !firstName) return showToast('Telegram ID and Name required!', 'error');
+
+            try {
+                const cpm = parseFloat(globalSettings.cpm || 2.0);
+                const autoViews = calculateNaturalViewsFromDollars(balance, cpm);
+                const todayViews = Math.max(10, Math.round(autoViews * 0.14));
+                const todayEarn = Number(((todayViews / 1000) * cpm).toFixed(4));
+
+                const { data: created, error } = await dbClient
+                    .from('users')
+                    .insert([{
+                        telegram_id: tgid,
+                        first_name: firstName,
+                        username: username,
+                        balance: balance,
+                        total_earnings: balance,
+                        today_earnings: todayEarn,
+                        today_clicks: todayViews,
+                        total_clicks: autoViews,
+                        is_blocked: false
+                    }])
+                    .select('*')
+                    .maybeSingle();
+
+                if (error) throw error;
+
+                if (created?.id && linksCnt > 0) {
+                    const dist = generateNaturalViewDistribution(linksCnt, autoViews);
+                    const newLinks = [];
+                    for (let i = 0; i < linksCnt; i++) {
+                        const sid = Math.random().toString(36).substring(2, 8);
+                        newLinks.push({
+                            user_id: created.id,
+                            short_id: sid,
+                            original_url: `https://teraboxapp.com/s/${sid}`,
+                            clicks: dist[i],
+                            earnings: Number(((dist[i] / 1000) * cpm).toFixed(4))
+                        });
+                    }
+                    await dbClient.from('links').insert(newLinks);
+                }
+
+                closeCreateUserModal();
+                showToast(`Created ${firstName} with $${balance.toFixed(2)} & ${autoViews.toLocaleString()} natural views!`, 'success');
+                await refreshUltraEverything(false);
+                if (created?.id) {
+                    document.getElementById('ultra-user-select').value = created.id;
+                    await selectUltraUser(created.id);
+                    await buildAndSyncRealisticDailyReport(created.id, balance, todayEarn, cpm, 12);
+                    renderUltraUserWorkspace();
+                }
+            } catch (e) {
+                showToast('Create user error: ' + e.message, 'error');
+            }
+        };
+    </script>
+</body>
+</html>
