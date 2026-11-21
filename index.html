@@ -4,16 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>teleEarn - Mini App</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src='//libtl.com/sdk.js' data-zone='12147149' data-sdk='show_12147149'></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
+    <script src="https://libtl.com/sdk.js" data-zone="12147149" data-sdk="show_12147149"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Poppins', sans-serif; background: #0f172a; color: #f8fafc; padding-bottom: 80px; min-height: 100vh; overflow-x: hidden; -webkit-tap-highlight-color: transparent;}
-        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 1.25rem; box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); }
+        body { font-family: 'Poppins', sans-serif; background: #0f172a; color: #f8fafc; padding-bottom: 84px; min-height: 100vh; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+        .glass-panel { background: rgba(30, 41, 59, 0.72); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 1.25rem; box-shadow: 0 4px 30px rgba(0, 0, 0, 0.12); }
         .primary-gradient { background: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%); }
         .success-gradient { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
         .nav-item { color: #64748b; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -25,11 +25,13 @@
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
         select { -webkit-appearance: none; -moz-appearance: none; appearance: none; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="%2394a3b8" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 10px center; background-size: 20px; }
     </style>
 </head>
 <body>
+
+    <!-- IN-PAGE TOAST NOTIFICATION -->
+    <div id="app-toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-[90] hidden bg-slate-900/95 border border-indigo-500/40 text-white px-4 py-2.5 rounded-xl shadow-2xl text-xs font-semibold"></div>
 
     <div id="ui-loading" class="fixed inset-0 flex flex-col items-center justify-center bg-[#0f172a] z-50">
         <i class="fa-solid fa-bolt text-5xl text-indigo-500 mb-4 animate-pulse"></i>
@@ -42,7 +44,7 @@
             <div class="w-20 h-20 bg-amber-500/20 rounded-full mx-auto flex items-center justify-center mb-6"><i class="fa-solid fa-person-digging text-4xl text-amber-500"></i></div>
             <h2 class="text-2xl font-bold text-white mb-2">Under Maintenance</h2>
             <p class="text-sm text-slate-300 mb-6">We are currently upgrading our servers to serve you better. Please check back later!</p>
-            <button onclick="tg.close()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl transition-all hover:bg-slate-700">Close App</button>
+            <button onclick="closeMiniApp()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl transition-all hover:bg-slate-700">Close App</button>
         </div>
     </div>
 
@@ -51,7 +53,7 @@
             <div class="w-16 h-16 bg-red-500/20 rounded-full mx-auto flex items-center justify-center mb-4"><i class="fa-solid fa-triangle-exclamation text-3xl text-red-500"></i></div>
             <h2 class="text-xl font-bold text-white mb-2">Important Rules!</h2>
             <p class="text-sm text-slate-300 mb-6"><span class="text-red-400 font-bold">1.</span> NO VPN Allowed.<br><span class="text-red-400 font-bold">2.</span> NO Self-Clicking.<br><br>Violations will result in an instant <span class="font-bold text-red-400">Account BAN</span> without payout.</p>
-            <button onclick="document.getElementById('warning-popup').classList.add('hidden')" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition-all">I Agree</button>
+            <button onclick="dismissWarningPopup()" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition-all">I Agree</button>
         </div>
     </div>
 
@@ -67,12 +69,13 @@
         </header>
 
         <div id="pages-container">
+            <!-- HOME PAGE -->
             <div id="page-home" class="page-content fade-in">
                 <div class="mx-4 mb-6 p-6 glass-panel relative overflow-hidden">
                     <h2 class="text-xs font-bold text-indigo-400 mb-3 uppercase tracking-wider"><i class="fa-solid fa-link mr-2"></i> Create Short Link</h2>
                     <input type="url" id="long-url-input" placeholder="Paste your long URL here..." class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl p-4 mb-4 focus:outline-none focus:border-indigo-500 transition-colors text-sm shadow-inner">
                     <button id="btn-shorten" class="w-full primary-gradient hover:opacity-90 text-white font-bold py-4 rounded-xl flex items-center justify-center space-x-2 shadow-lg shadow-indigo-500/25 transition-transform active:scale-95">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i><span>Shorten & Earn</span>
+                        <i class="fa-solid fa-wand-magic-sparkles"></i><span>Shorten &amp; Earn</span>
                     </button>
                     <div id="shorten-result" class="hidden mt-5 p-2 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 rounded-xl">
                         <div class="flex justify-between items-center bg-slate-900 rounded-lg p-3">
@@ -92,7 +95,7 @@
                         <div class="text-slate-400 text-xs mb-1 uppercase font-semibold">Total Views</div><div class="text-2xl font-bold text-white" id="stat-views">0</div>
                     </div>
                     <div class="glass-panel p-5 col-span-2 flex justify-between items-center bg-gradient-to-r from-slate-800 to-indigo-900/30">
-                        <div><div class="text-indigo-300 text-xs font-bold uppercase mb-1">Global CPM Rate</div><div class="text-[10px] text-slate-400">Valid for all countries</div></div>
+                        <div><div class="text-indigo-300 text-xs font-bold uppercase mb-1">Active CPM Rate</div><div class="text-[10px] text-slate-400">Valid for all countries</div></div>
                         <div class="text-3xl font-bold text-indigo-400" id="stat-cpm">$0.00</div>
                     </div>
                 </div>
@@ -108,15 +111,21 @@
                 </div>
             </div>
 
+            <!-- MY LINKS PAGE -->
             <div id="page-links" class="page-content hidden mx-4 mb-6 fade-in">
-                <div class="flex justify-between items-center mb-6">
+                <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-link text-indigo-400 mr-2"></i> My Links</h2>
+                    <span id="my-links-summary" class="text-xs text-indigo-300 bg-indigo-500/15 px-3 py-1 rounded-full border border-indigo-500/30 font-semibold">0 Links</span>
                 </div>
-                <div id="links-list" class="space-y-4">
+                <div id="links-list" class="space-y-3">
                     <div class="text-center text-slate-500 py-10"><i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2 block"></i> Loading...</div>
                 </div>
+                <button id="btn-load-more-links" onclick="loadMoreUserLinks()" class="hidden w-full mt-4 bg-slate-800 hover:bg-slate-700 text-indigo-300 font-bold py-3 rounded-xl text-xs transition">
+                    Load More Links
+                </button>
             </div>
 
+            <!-- REFER PAGE -->
             <div id="page-refer" class="page-content hidden mx-4 mb-6 fade-in">
                 <div class="glass-panel p-6 text-center mb-6 relative overflow-hidden">
                     <div class="absolute inset-0 bg-gradient-to-b from-indigo-500/10 to-transparent pointer-events-none"></div>
@@ -128,7 +137,7 @@
                         <button id="btn-copy-referral" class="primary-gradient text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-lg active:scale-95 transition-transform">Copy</button>
                     </div>
                 </div>
-                
+
                 <div class="grid grid-cols-2 gap-4 mb-6">
                     <div class="glass-panel p-5 text-center">
                         <div class="text-slate-400 text-xs mb-2 uppercase font-semibold">Total Referrals</div>
@@ -146,9 +155,10 @@
                 </div>
             </div>
 
+            <!-- WALLET PAGE -->
             <div id="page-wallet" class="page-content hidden mx-4 mb-6 fade-in">
                 <h2 class="text-xl font-bold mb-4 text-white"><i class="fa-solid fa-wallet text-emerald-400 mr-2"></i> My Wallet</h2>
-                
+
                 <div class="glass-panel p-8 mb-6 text-center border border-emerald-500/30 bg-gradient-to-br from-emerald-900/20 to-transparent relative overflow-hidden">
                     <i class="fa-solid fa-coins absolute -right-6 -bottom-6 text-8xl text-emerald-500/10"></i>
                     <div class="text-sm text-emerald-200 mb-2 font-medium">Available Balance</div>
@@ -158,7 +168,7 @@
 
                 <div class="glass-panel p-6 mb-6 border border-slate-700">
                     <h3 class="font-bold text-sm text-white mb-4 uppercase tracking-wider border-b border-slate-700 pb-2">Request Payout</h3>
-                    
+
                     <div class="mb-4">
                         <label class="block text-xs font-bold text-slate-400 mb-2">Select Payment Method</label>
                         <select id="withdraw-method" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-3 text-sm focus:outline-none focus:border-indigo-500">
@@ -187,6 +197,7 @@
                 </div>
             </div>
 
+            <!-- PROFILE PAGE -->
             <div id="page-profile" class="page-content hidden mx-4 mb-6 fade-in">
                 <div class="glass-panel p-8 mb-6 text-center relative overflow-hidden">
                     <div class="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-transparent"></div>
@@ -197,30 +208,30 @@
 
                 <div class="glass-panel p-2 mb-4 shadow-lg">
                     <h3 class="text-xs font-bold text-slate-400 px-4 pt-4 pb-2 uppercase tracking-wider">Social Links</h3>
-                    <a id="link-tg" href="#" target="_blank" class="hidden items-center justify-between p-4 hover:bg-slate-800/50 rounded-xl transition">
+                    <button id="link-tg" onclick="openExternalUrl(this.dataset.url)" class="hidden w-full items-center justify-between p-4 hover:bg-slate-800/50 rounded-xl transition text-left">
                         <div class="flex items-center"><i class="fa-brands fa-telegram w-8 text-blue-400 text-2xl text-center"></i><span class="font-medium text-sm text-slate-200 ml-2">Official Channel</span></div>
                         <i class="fa-solid fa-arrow-up-right-from-square text-xs text-slate-500"></i>
-                    </a>
+                    </button>
                     <div id="div-line-yt" class="hidden h-px bg-slate-700/50 mx-4"></div>
-                    <a id="link-yt" href="#" target="_blank" class="hidden items-center justify-between p-4 hover:bg-slate-800/50 rounded-xl transition">
+                    <button id="link-yt" onclick="openExternalUrl(this.dataset.url)" class="hidden w-full items-center justify-between p-4 hover:bg-slate-800/50 rounded-xl transition text-left">
                         <div class="flex items-center"><i class="fa-brands fa-youtube w-8 text-red-500 text-2xl text-center"></i><span class="font-medium text-sm text-slate-200 ml-2">YouTube Channel</span></div>
                         <i class="fa-solid fa-arrow-up-right-from-square text-xs text-slate-500"></i>
-                    </a>
+                    </button>
                 </div>
 
                 <div class="glass-panel p-2 mb-4 shadow-lg">
                     <h3 class="text-xs font-bold text-slate-400 px-4 pt-4 pb-2 uppercase tracking-wider">Legal</h3>
-                    <a id="link-privacy" href="#" target="_blank" class="hidden items-center justify-between p-4 hover:bg-slate-800/50 rounded-xl transition">
+                    <button id="link-privacy" onclick="openExternalUrl(this.dataset.url)" class="hidden w-full items-center justify-between p-4 hover:bg-slate-800/50 rounded-xl transition text-left">
                         <div class="flex items-center"><i class="fa-solid fa-shield-halved w-8 text-slate-400 text-lg text-center"></i><span class="text-sm text-slate-300 ml-2">Privacy Policy</span></div>
                         <i class="fa-solid fa-chevron-right text-xs text-slate-600"></i>
-                    </a>
-                    <a id="link-terms" href="#" target="_blank" class="hidden items-center justify-between p-4 hover:bg-slate-800/50 rounded-xl transition border-t border-slate-700/50">
+                    </button>
+                    <button id="link-terms" onclick="openExternalUrl(this.dataset.url)" class="hidden w-full items-center justify-between p-4 hover:bg-slate-800/50 rounded-xl transition border-t border-slate-700/50 text-left">
                         <div class="flex items-center"><i class="fa-solid fa-file-contract w-8 text-slate-400 text-lg text-center"></i><span class="text-sm text-slate-300 ml-2">Terms of Service</span></div>
                         <i class="fa-solid fa-chevron-right text-xs text-slate-600"></i>
-                    </a>
+                    </button>
                 </div>
 
-                <div class="text-center text-[10px] text-slate-500 mt-8 mb-2">Developed & Maintained by <span class="font-bold text-indigo-400">Nobi Bots</span></div>
+                <div class="text-center text-[10px] text-slate-500 mt-8 mb-2">Developed &amp; Maintained by <span class="font-bold text-indigo-400">Priyans</span></div>
             </div>
         </div>
 
@@ -252,41 +263,120 @@
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://zrhrvbkefmybketbiicw.supabase.co'; 
+        const SUPABASE_URL = 'https://zrhrvbkefmybketbiicw.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_Iwz3ILjEoOrr_PBqRc7nIQ_UunV1f1y';
-        const VERCEL_API_URL = 'https://teleearnlinks.vercel.app/api'; 
-        
-        const BOT_USERNAME = 'teleEarnLinkbot'; 
-        const APP_SHORT_NAME = 'httpsteleearnlinksvercelapp'; 
+        const VERCEL_API_URL = 'https://teleearnlinks.vercel.app/api';
 
-        let dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const BOT_USERNAME = 'teleEarnLinkbot';
+        const APP_SHORT_NAME = 'httpsteleearnlinksvercelapp';
+
+        const dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let currentUserData = null;
-        let adminSettings = { cpm: 2, ad_time: 5, ads_per_link: 1, refer_percent: 10, min_withdraw: 5.0, maintenance_mode: false, payment_methods: "UPI" };
-        
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.setHeaderColor('#0f172a');
+        let userUltraOverrides = {};
+        let adminSettings = { cpm: 2, ad_timer: 5, ads_per_link: 1, refer_percent: 10, min_withdraw: 5.0, maintenance_mode: false, payment_methods: 'UPI' };
 
-        let currentAdStep = 1; let totalAdsRequired = 1;
-        window.invalidClickReason = null; 
-        window.targetUrlForClick = null; 
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.expand();
+            try { tg.setHeaderColor('#0f172a'); } catch (e) {}
+        }
 
-        function safeAlert(msg) { try { tg.showAlert(msg); } catch(e) { alert(msg); } }
+        let currentAdStep = 1;
+        let totalAdsRequired = 1;
+        let linksPageOffset = 0;
+        const LINKS_PAGE_SIZE = 30;
+        window.invalidClickReason = null;
+        window.targetUrlForClick = null;
+
+        function safeAlert(msg) {
+            if (tg && typeof tg.showAlert === 'function') {
+                try { tg.showAlert(msg); return; } catch (e) {}
+            }
+            const t = document.getElementById('app-toast');
+            if (t) {
+                t.innerText = msg;
+                t.classList.remove('hidden');
+                setTimeout(() => t.classList.add('hidden'), 3200);
+            }
+        }
+
+        window.closeMiniApp = function() {
+            if (tg && typeof tg.close === 'function') tg.close();
+        };
+
+        window.dismissWarningPopup = function() {
+            document.getElementById('warning-popup').classList.add('hidden');
+        };
+
+        window.openExternalUrl = function(url) {
+            if (!url) return;
+            if (tg && typeof tg.openLink === 'function') tg.openLink(url);
+            else window.open(url, '_blank');
+        };
+
         function copyText(text) {
-            const el = document.createElement('textarea'); el.value = text; document.body.appendChild(el); el.select();
-            try { document.execCommand('copy'); safeAlert("Copied to clipboard!"); } catch (e) {} document.body.removeChild(el);
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            try {
+                document.execCommand('copy');
+                safeAlert('Copied to clipboard!');
+            } catch (e) {}
+            document.body.removeChild(el);
+        }
+
+        function getActiveUserCpm() {
+            if (userUltraOverrides && userUltraOverrides.custom_cpm !== null && userUltraOverrides.custom_cpm !== undefined && userUltraOverrides.custom_cpm !== '') {
+                const c = parseFloat(userUltraOverrides.custom_cpm);
+                if (!isNaN(c)) return c;
+            }
+            return parseFloat(adminSettings.cpm || 0);
+        }
+
+        function getActiveMinWithdraw() {
+            if (userUltraOverrides && userUltraOverrides.custom_min_withdraw !== null && userUltraOverrides.custom_min_withdraw !== undefined && userUltraOverrides.custom_min_withdraw !== '') {
+                const m = parseFloat(userUltraOverrides.custom_min_withdraw);
+                if (!isNaN(m)) return m;
+            }
+            return parseFloat(adminSettings.min_withdraw || 5);
+        }
+
+        function getActiveReferPercent() {
+            if (userUltraOverrides && userUltraOverrides.custom_refer_percent !== null && userUltraOverrides.custom_refer_percent !== undefined && userUltraOverrides.custom_refer_percent !== '') {
+                const r = parseFloat(userUltraOverrides.custom_refer_percent);
+                if (!isNaN(r)) return r;
+            }
+            return parseFloat(adminSettings.refer_percent || 10);
         }
 
         function switchPage(pageId) {
             document.querySelectorAll('.page-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(pageId).classList.remove('hidden');
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            document.querySelector(`.nav-btn[data-target="${pageId}"]`).classList.add('active');
-            
-            if(pageId === 'page-links') loadLinks();
-            if(pageId === 'page-home') generateDateReport();
-            if(pageId === 'page-refer') fetchReferralDetails();
-            if(pageId === 'page-wallet') loadWithdrawalHistory();
+            const navBtn = document.querySelector(`.nav-btn[data-target="${pageId}"]`);
+            if (navBtn) navBtn.classList.add('active');
+
+            if (pageId === 'page-links') loadLinks(true);
+            if (pageId === 'page-home') generateDateReport();
+            if (pageId === 'page-refer') fetchReferralDetails();
+            if (pageId === 'page-wallet') loadWithdrawalHistory();
+        }
+
+        async function loadUserUltraOverrides(userUuid) {
+            if (!userUuid) return;
+            try {
+                const { data } = await dbClient
+                    .from('links')
+                    .select('original_url')
+                    .eq('short_id', `__uadmin_${userUuid}`)
+                    .maybeSingle();
+                if (data && data.original_url) {
+                    userUltraOverrides = JSON.parse(data.original_url) || {};
+                }
+            } catch (e) {
+                userUltraOverrides = {};
+            }
         }
 
         async function initApp() {
@@ -295,115 +385,168 @@
                 if (adminSettings.maintenance_mode) {
                     document.getElementById('ui-loading').classList.add('hidden');
                     document.getElementById('ui-maintenance').classList.remove('hidden');
-                    return; 
+                    return;
                 }
 
-                let startParam = tg.initDataUnsafe?.start_param || new URLSearchParams(window.location.search).get('link');
-                
-                if (tg.initDataUnsafe?.user) {
+                const startParam = tg?.initDataUnsafe?.start_param || new URLSearchParams(window.location.search).get('link');
+
+                if (tg?.initDataUnsafe?.user) {
                     const user = tg.initDataUnsafe.user;
-                    const { data: existUser } = await dbClient.from('users').select('*').eq('telegram_id', user.id).single();
-                    if (existUser && existUser.is_blocked) return document.getElementById('loading-title').innerText = "Account Blocked";
+                    let { data: existUser } = await dbClient.from('users').select('*').eq('telegram_id', user.id).maybeSingle();
+                    if (existUser && existUser.is_blocked) {
+                        document.getElementById('loading-title').innerText = 'Account Blocked';
+                        return;
+                    }
 
                     if (!existUser) {
-                        await dbClient.from('users').insert([{ telegram_id: user.id, first_name: user.first_name, username: user.username }]);
+                        const { data: created } = await dbClient
+                            .from('users')
+                            .insert([{ telegram_id: user.id, first_name: user.first_name, username: user.username }])
+                            .select('*')
+                            .maybeSingle();
+                        existUser = created;
+
                         if (startParam && startParam.startsWith('ref_')) {
                             const referrerId = parseInt(startParam.replace('ref_', ''), 10);
                             if (referrerId && referrerId !== user.id) {
                                 await dbClient.from('referrals').insert([{ referrer_tg_id: referrerId, referred_tg_id: user.id, status: 'pending' }]);
                                 try {
-                                    fetch(`${VERCEL_API_URL}/process_referral`, {
-                                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                    fetch('https://teleearnlinks.vercel.app/api/process_referral', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ referrer_id: referrerId, new_user: user })
                                     });
-                                } catch(e) {}
+                                } catch (e) {}
                             }
                         }
                     }
-                    currentUserData = existUser || { telegram_id: user.id, balance: 0, today_earnings: 0, total_clicks: 0, id: null };
-                } else if (!startParam) { return document.getElementById('loading-text').innerText = "Open inside Telegram App."; }
+                    currentUserData = existUser || { telegram_id: user.id, first_name: user.first_name, balance: 0, today_earnings: 0, total_clicks: 0, id: null };
+                    if (currentUserData.id) {
+                        await loadUserUltraOverrides(currentUserData.id);
+                    }
+                } else if (!startParam) {
+                    document.getElementById('loading-text').innerText = 'Open inside Telegram App.';
+                    return;
+                }
 
                 if (startParam && startParam.startsWith('link_')) {
                     window.currentShortId = startParam.replace('link_', '');
-                    await verifyLinkStatus(); 
+                    await verifyLinkStatus();
                     startAdFlow();
                 } else {
                     document.getElementById('ui-loading').classList.add('hidden');
                     document.getElementById('ui-main-app').classList.remove('hidden');
                     setupDashboard();
                 }
-            } catch(e) { document.getElementById('loading-text').innerText = "Error: " + e.message; }
+            } catch (e) {
+                document.getElementById('loading-text').innerText = 'Error: ' + e.message;
+            }
         }
 
         async function loadAdminSettings() {
-            const { data } = await dbClient.from('settings').select('*').limit(1).single();
-            if(data) adminSettings = { ...adminSettings, ...data };
+            const { data } = await dbClient.from('settings').select('*').limit(1).maybeSingle();
+            if (data) adminSettings = { ...adminSettings, ...data };
             totalAdsRequired = adminSettings.ads_per_link || 1;
         }
 
         async function verifyLinkStatus() {
             try {
-                const { data: linkData } = await dbClient.from('links').select('id, user_id, original_url').eq('short_id', window.currentShortId).single();
-                if(linkData) {
+                const { data: linkData } = await dbClient.from('links').select('id, user_id, original_url').eq('short_id', window.currentShortId).maybeSingle();
+                if (linkData) {
                     window.targetUrlForClick = linkData.original_url;
-                    if(currentUserData) {
-                        if(linkData.user_id === currentUserData.id) { window.invalidClickReason = "self"; return; }
-                        if(currentUserData.telegram_id) {
+                    if (currentUserData) {
+                        if (linkData.user_id === currentUserData.id) {
+                            window.invalidClickReason = 'self';
+                            return;
+                        }
+                        if (currentUserData.telegram_id) {
                             const { data: logs } = await dbClient.from('click_logs').select('id').eq('link_id', linkData.id).eq('clicker_tg_id', currentUserData.telegram_id);
-                            if(logs && logs.length > 0) window.invalidClickReason = "duplicate";
+                            if (logs && logs.length > 0) window.invalidClickReason = 'duplicate';
                         }
                     }
                 }
-            } catch(e) {}
+            } catch (e) {}
         }
 
         function setupDashboard() {
             document.getElementById('warning-popup').classList.remove('hidden');
-            const u = tg.initDataUnsafe?.user;
-            if(u) {
-                document.getElementById('user-greeting').innerText = `Hello, ${u.first_name}!`;
-                document.getElementById('profile-name').innerText = u.first_name;
-                document.getElementById('profile-avatar').innerText = u.first_name.charAt(0);
-                document.getElementById('profile-id').innerText = `ID: ${u.id}`;
-                document.getElementById('referral-link-display').innerText = `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=ref_${u.id}`;
-            }
+            const displayName = currentUserData?.first_name || tg?.initDataUnsafe?.user?.first_name || 'Partner';
+            const displayTgId = currentUserData?.telegram_id || tg?.initDataUnsafe?.user?.id || '';
+
+            document.getElementById('user-greeting').innerText = `Hello, ${displayName}!`;
+            document.getElementById('profile-name').innerText = displayName;
+            document.getElementById('profile-avatar').innerText = displayName.charAt(0).toUpperCase();
+            document.getElementById('profile-id').innerText = `ID: ${displayTgId}`;
+            document.getElementById('referral-link-display').innerText = `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=ref_${displayTgId}`;
 
             document.getElementById('header-balance').innerText = `$${parseFloat(currentUserData.balance || 0).toFixed(2)}`;
             document.getElementById('wallet-balance-page').innerText = `$${parseFloat(currentUserData.balance || 0).toFixed(2)}`;
             document.getElementById('stat-today-earn').innerText = `$${parseFloat(currentUserData.today_earnings || 0).toFixed(4)}`;
-            document.getElementById('stat-views').innerText = currentUserData.total_clicks || 0;
-            document.getElementById('stat-cpm').innerText = `$${parseFloat(adminSettings.cpm || 0).toFixed(2)}`;
-            document.getElementById('refer-commission').innerText = `${adminSettings.refer_percent || 10}%`;
-            document.getElementById('min-withdraw-display').innerText = `$${parseFloat(adminSettings.min_withdraw || 5).toFixed(2)}`;
+            document.getElementById('stat-views').innerText = parseInt(currentUserData.total_clicks || 0, 10).toLocaleString();
+            document.getElementById('stat-cpm').innerText = `$${getActiveUserCpm().toFixed(2)}`;
+            document.getElementById('refer-commission').innerText = `${getActiveReferPercent()}%`;
+            document.getElementById('min-withdraw-display').innerText = `$${getActiveMinWithdraw().toFixed(2)}`;
+            document.getElementById('ref-earnings').innerText = `$${parseFloat(userUltraOverrides?.ref_earnings || 0).toFixed(2)}`;
 
-            if(adminSettings.tg_channel_url) { document.getElementById('link-tg').href = adminSettings.tg_channel_url; document.getElementById('link-tg').classList.remove('hidden'); document.getElementById('link-tg').classList.add('flex'); }
-            if(adminSettings.yt_channel_url) { document.getElementById('link-yt').href = adminSettings.yt_channel_url; document.getElementById('link-yt').classList.remove('hidden'); document.getElementById('link-yt').classList.add('flex'); if(adminSettings.tg_channel_url) document.getElementById('div-line-yt').classList.remove('hidden'); }
-            if(adminSettings.privacy_url) { document.getElementById('link-privacy').href = adminSettings.privacy_url; document.getElementById('link-privacy').classList.remove('hidden'); document.getElementById('link-privacy').classList.add('flex'); }
-            if(adminSettings.terms_url) { document.getElementById('link-terms').href = adminSettings.terms_url; document.getElementById('link-terms').classList.remove('hidden'); document.getElementById('link-terms').classList.add('flex'); }
+            if (adminSettings.tg_channel_url) {
+                const el = document.getElementById('link-tg');
+                el.dataset.url = adminSettings.tg_channel_url;
+                el.classList.remove('hidden');
+                el.classList.add('flex');
+            }
+            if (adminSettings.yt_channel_url) {
+                const el = document.getElementById('link-yt');
+                el.dataset.url = adminSettings.yt_channel_url;
+                el.classList.remove('hidden');
+                el.classList.add('flex');
+                if (adminSettings.tg_channel_url) document.getElementById('div-line-yt').classList.remove('hidden');
+            }
+            if (adminSettings.privacy_url) {
+                const el = document.getElementById('link-privacy');
+                el.dataset.url = adminSettings.privacy_url;
+                el.classList.remove('hidden');
+                el.classList.add('flex');
+            }
+            if (adminSettings.terms_url) {
+                const el = document.getElementById('link-terms');
+                el.dataset.url = adminSettings.terms_url;
+                el.classList.remove('hidden');
+                el.classList.add('flex');
+            }
 
-            const methods = (adminSettings.payment_methods || "UPI").split(',');
+            const methods = (adminSettings.payment_methods || 'UPI').split(',');
             const sel = document.getElementById('withdraw-method');
             sel.innerHTML = '<option value="">Choose Method...</option>';
             methods.forEach(m => {
                 const opt = document.createElement('option');
-                opt.value = m.trim(); opt.innerText = m.trim();
+                opt.value = m.trim();
+                opt.innerText = m.trim();
                 sel.appendChild(opt);
             });
 
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', function() { switchPage(this.getAttribute('data-target')); }));
-            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    switchPage(this.getAttribute('data-target'));
+                });
+            });
+
             document.getElementById('btn-shorten').addEventListener('click', async function() {
                 const url = document.getElementById('long-url-input').value.trim();
-                if (!url.startsWith('http')) return safeAlert("Please enter a valid URL (http/https)"); 
-                this.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>'; this.disabled = true;
+                if (!url.startsWith('http')) return safeAlert('Please enter a valid URL (http/https)');
+                this.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+                this.disabled = true;
                 try {
                     const shortId = Math.random().toString(36).substring(2, 8);
                     await dbClient.from('links').insert([{ original_url: url, short_id: shortId, user_id: currentUserData.id }]);
                     document.getElementById('short-link-display').innerText = `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=link_${shortId}`;
                     document.getElementById('shorten-result').classList.remove('hidden');
                     document.getElementById('long-url-input').value = '';
-                } catch (e) { safeAlert("Error generating link."); } 
-                finally { this.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i><span>Shorten & Earn</span>'; this.disabled = false; }
+                } catch (e) {
+                    safeAlert('Error generating link.');
+                } finally {
+                    this.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i><span>Shorten & Earn</span>';
+                    this.disabled = false;
+                }
             });
 
             document.getElementById('btn-copy-link').addEventListener('click', () => copyText(document.getElementById('short-link-display').innerText));
@@ -411,31 +554,36 @@
 
             document.getElementById('report-month').value = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
             document.getElementById('report-month').addEventListener('change', generateDateReport);
-            generateDateReport(); fetchReferralDetails();
+            generateDateReport();
+            fetchReferralDetails();
         }
 
         window.submitWithdrawal = async function() {
             const method = document.getElementById('withdraw-method').value;
             const details = document.getElementById('withdraw-details').value.trim();
             const amount = parseFloat(document.getElementById('withdraw-amount').value);
-            const minW = parseFloat(adminSettings.min_withdraw || 5);
+            const minW = getActiveMinWithdraw();
             const bal = parseFloat(currentUserData.balance || 0);
 
-            if(!method) return safeAlert("Please select a payment method.");
-            if(!details) return safeAlert("Please enter payment details.");
-            if(!amount || isNaN(amount) || amount < minW) return safeAlert(`Minimum withdrawal is $${minW.toFixed(2)}`);
-            if(amount > bal) return safeAlert("Insufficient balance!");
+            if (!method) return safeAlert('Please select a payment method.');
+            if (!details) return safeAlert('Please enter payment details.');
+            if (!amount || isNaN(amount) || amount < minW) return safeAlert(`Minimum withdrawal is $${minW.toFixed(2)}`);
+            if (amount > bal) return safeAlert('Insufficient balance!');
 
             const btn = document.getElementById('btn-submit-withdraw');
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Processing...</span>'; btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Processing...</span>';
+            btn.disabled = true;
 
             try {
                 const newBal = bal - amount;
                 await dbClient.from('users').update({ balance: newBal }).eq('id', currentUserData.id);
                 await dbClient.from('withdrawals').insert([{
                     user_id: currentUserData.id,
-                    username: tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name || 'User',
-                    amount: amount, method: method, details: details, status: 'pending'
+                    username: currentUserData.username || currentUserData.first_name || 'User',
+                    amount: amount,
+                    method: method,
+                    details: details,
+                    status: 'pending'
                 }]);
 
                 currentUserData.balance = newBal;
@@ -443,163 +591,299 @@
                 document.getElementById('wallet-balance-page').innerText = `$${newBal.toFixed(2)}`;
                 document.getElementById('withdraw-amount').value = '';
                 document.getElementById('withdraw-details').value = '';
-                safeAlert("Withdrawal Request Submitted Successfully!");
+                safeAlert('Withdrawal Request Submitted Successfully!');
                 loadWithdrawalHistory();
-            } catch(e) { safeAlert("Error submitting request."); }
-            
-            btn.innerHTML = '<i class="fa-solid fa-money-bill-transfer"></i><span>Submit Request</span>'; btn.disabled = false;
-        }
+            } catch (e) {
+                safeAlert('Error submitting request.');
+            }
+
+            btn.innerHTML = '<i class="fa-solid fa-money-bill-transfer"></i><span>Submit Request</span>';
+            btn.disabled = false;
+        };
 
         async function loadWithdrawalHistory() {
             const list = document.getElementById('withdrawal-history-list');
             try {
                 const { data } = await dbClient.from('withdrawals').select('*').eq('user_id', currentUserData.id).order('created_at', { ascending: false });
-                if(!data || data.length === 0) return list.innerHTML = '<div class="glass-panel p-6 text-center text-slate-500 text-xs">No transactions yet.</div>';
-                
+                if (!data || data.length === 0) {
+                    list.innerHTML = '<div class="glass-panel p-6 text-center text-slate-500 text-xs">No transactions yet.</div>';
+                    return;
+                }
+
                 list.innerHTML = '';
                 data.forEach(w => {
                     const dateStr = new Date(w.created_at).toLocaleDateString();
-                    let color = 'text-amber-400'; let icon = 'fa-clock';
-                    if(w.status === 'approved') { color = 'text-emerald-400'; icon = 'fa-check-double'; }
-                    if(w.status === 'rejected') { color = 'text-red-400'; icon = 'fa-xmark'; }
+                    let color = 'text-amber-400';
+                    let icon = 'fa-clock';
+                    if (w.status === 'approved') { color = 'text-emerald-400'; icon = 'fa-check-double'; }
+                    if (w.status === 'rejected') { color = 'text-red-400'; icon = 'fa-xmark'; }
 
-                    list.innerHTML += `<div class="glass-panel p-4 flex justify-between items-center mb-3"><div><div class="font-bold text-white text-sm mb-1">${w.method}</div><div class="text-[10px] text-slate-400">${dateStr}</div></div><div class="text-right"><div class="font-bold text-white mb-1">$${w.amount.toFixed(2)}</div><div class="text-[10px] font-bold uppercase ${color}"><i class="fa-solid ${icon} mr-1"></i>${w.status}</div></div></div>`;
+                    list.innerHTML += `<div class="glass-panel p-4 flex justify-between items-center mb-3"><div><div class="font-bold text-white text-sm mb-1">${w.method}</div><div class="text-[10px] text-slate-400">${dateStr}</div></div><div class="text-right"><div class="font-bold text-white mb-1">$${parseFloat(w.amount || 0).toFixed(2)}</div><div class="text-[10px] font-bold uppercase ${color}"><i class="fa-solid ${icon} mr-1"></i>${w.status}</div></div></div>`;
                 });
-            } catch(e) {}
+            } catch (e) {}
         }
 
-        async function loadLinks() {
+        async function loadLinks(reset = true) {
             const list = document.getElementById('links-list');
+            const moreBtn = document.getElementById('btn-load-more-links');
+            const summaryEl = document.getElementById('my-links-summary');
+            if (reset) {
+                linksPageOffset = 0;
+                list.innerHTML = '<div class="text-center text-slate-500 py-10"><i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2 block"></i> Loading...</div>';
+            }
+
             try {
-                const { data } = await dbClient.from('links').select('*').eq('user_id', currentUserData.id).order('created_at', { ascending: false }).limit(20);
-                if (!data || data.length === 0) return list.innerHTML = '<div class="text-center text-slate-500 py-10">No links created yet.</div>';
-                list.innerHTML = '';
+                const [countRes, dataRes] = await Promise.all([
+                    dbClient.from('links').select('*', { count: 'exact', head: true }).eq('user_id', currentUserData.id),
+                    dbClient.from('links').select('*').eq('user_id', currentUserData.id).order('created_at', { ascending: false }).range(linksPageOffset, linksPageOffset + LINKS_PAGE_SIZE - 1)
+                ]);
+
+                const totalCount = countRes.count || 0;
+                if (summaryEl) summaryEl.innerText = `${totalCount.toLocaleString()} Links`;
+
+                const data = dataRes.data || [];
+                if (reset && data.length === 0) {
+                    list.innerHTML = '<div class="text-center text-slate-500 py-10">No links created yet.</div>';
+                    moreBtn.classList.add('hidden');
+                    return;
+                }
+
+                if (reset) list.innerHTML = '';
                 data.forEach(l => {
                     const shortUrl = `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=link_${l.short_id}`;
-                    list.innerHTML += `<div class="glass-panel p-4 mb-3"><div class="flex justify-between items-start mb-2"><div class="truncate w-3/4"><span class="text-indigo-400 text-xs block truncate">${shortUrl}</span><span class="text-[10px] text-slate-500 block truncate">${l.original_url}</span></div><button onclick="copyText('${shortUrl}')" class="bg-slate-800 p-2 rounded text-indigo-400 hover:text-white"><i class="fa-solid fa-copy"></i></button></div><div class="flex space-x-4 pt-2 border-t border-slate-700/50 text-xs"><div><i class="fa-solid fa-eye text-slate-400"></i> <span class="text-white font-bold">${l.clicks || 0}</span></div><div><i class="fa-solid fa-coins text-emerald-400"></i> <span class="text-emerald-400 font-bold">$${parseFloat(l.earnings || 0).toFixed(4)}</span></div></div></div>`;
+                    list.innerHTML += `<div class="glass-panel p-4 mb-3"><div class="flex justify-between items-start mb-2"><div class="truncate w-3/4"><span class="text-indigo-400 text-xs block truncate">${shortUrl}</span><span class="text-[10px] text-slate-500 block truncate">${l.original_url}</span></div><button onclick="copyText('${shortUrl}')" class="bg-slate-800 p-2 rounded text-indigo-400 hover:text-white"><i class="fa-solid fa-copy"></i></button></div><div class="flex space-x-4 pt-2 border-t border-slate-700/50 text-xs"><div><i class="fa-solid fa-eye text-slate-400"></i> <span class="text-white font-bold">${parseInt(l.clicks || 0, 10).toLocaleString()}</span></div><div><i class="fa-solid fa-coins text-emerald-400"></i> <span class="text-emerald-400 font-bold">$${parseFloat(l.earnings || 0).toFixed(4)}</span></div></div></div>`;
                 });
-            } catch(e) {}
+
+                linksPageOffset += data.length;
+                if (linksPageOffset < totalCount) {
+                    moreBtn.classList.remove('hidden');
+                } else {
+                    moreBtn.classList.add('hidden');
+                }
+            } catch (e) {}
         }
 
+        window.loadMoreUserLinks = function() {
+            loadLinks(false);
+        };
+
         async function fetchReferralDetails() {
-            if(!currentUserData.telegram_id) return;
+            if (!currentUserData.telegram_id) return;
             const listContainer = document.getElementById('referrals-list');
+            document.getElementById('ref-earnings').innerText = `$${parseFloat(userUltraOverrides?.ref_earnings || 0).toFixed(2)}`;
+
             try {
                 const { data: refs } = await dbClient.from('referrals').select('*').eq('referrer_tg_id', currentUserData.telegram_id).order('created_at', { ascending: false });
-                if (!refs || refs.length === 0) {
+                const customRefs = Array.isArray(userUltraOverrides?.custom_referrals) ? userUltraOverrides.custom_referrals : [];
+                const realRefs = refs || [];
+
+                const totalShownCount = (userUltraOverrides?.custom_ref_count !== null && userUltraOverrides?.custom_ref_count !== undefined && userUltraOverrides?.custom_ref_count !== '')
+                    ? parseInt(userUltraOverrides.custom_ref_count, 10)
+                    : (realRefs.length + customRefs.length);
+
+                document.getElementById('stat-referrals').innerText = totalShownCount;
+
+                if (realRefs.length === 0 && customRefs.length === 0) {
                     listContainer.innerHTML = '<div class="text-center text-slate-500 py-6 text-sm glass-panel">You have not referred anyone yet.</div>';
-                    document.getElementById('stat-referrals').innerText = 0; return;
+                    return;
                 }
-                const refIds = refs.map(r => r.referred_tg_id);
-                const { data: usersData } = await dbClient.from('users').select('telegram_id, first_name').in('telegram_id', refIds);
-                let userNames = {}; if(usersData) usersData.forEach(u => userNames[u.telegram_id] = u.first_name);
+
+                let userNames = {};
+                if (realRefs.length > 0) {
+                    const refIds = realRefs.map(r => r.referred_tg_id);
+                    const { data: usersData } = await dbClient.from('users').select('telegram_id, first_name').in('telegram_id', refIds);
+                    if (usersData) usersData.forEach(u => { userNames[u.telegram_id] = u.first_name; });
+                }
 
                 listContainer.innerHTML = '';
-                refs.forEach(ref => {
-                    const uName = userNames[ref.referred_tg_id] || "Unknown User";
+                customRefs.forEach(cr => {
+                    listContainer.innerHTML += `<div class="glass-panel p-4 flex justify-between items-center mb-3"><span class="font-bold text-white text-sm"><i class="fa-solid fa-user text-indigo-400 mr-2"></i>${cr.name}</span><span class="bg-amber-500/20 text-amber-400 px-2 py-1 rounded text-[10px] font-bold">${cr.status || 'Registered'}</span></div>`;
+                });
+                realRefs.forEach(ref => {
+                    const uName = userNames[ref.referred_tg_id] || 'Unknown User';
                     listContainer.innerHTML += `<div class="glass-panel p-4 flex justify-between items-center mb-3"><span class="font-bold text-white text-sm"><i class="fa-solid fa-user text-slate-500 mr-2"></i>${uName}</span><span class="bg-amber-500/20 text-amber-400 px-2 py-1 rounded text-[10px] font-bold">Registered</span></div>`;
                 });
-                document.getElementById('stat-referrals').innerText = refs.length;
-            } catch (e) { listContainer.innerHTML = '<div class="text-center text-red-400 py-6 text-sm glass-panel">Error loading data.</div>'; }
+            } catch (e) {
+                listContainer.innerHTML = '<div class="text-center text-red-400 py-6 text-sm glass-panel">Error loading data.</div>';
+            }
         }
 
         async function generateDateReport() {
             const listDiv = document.getElementById('earnings-list');
             const monthStr = document.getElementById('report-month').value;
-            if(!monthStr || !currentUserData.id) return;
+            if (!monthStr || !currentUserData.id) return;
             listDiv.innerHTML = '<div class="text-center text-slate-500 py-4"><i class="fa-solid fa-circle-notch fa-spin"></i> Fetching...</div>';
+
             const [year, month] = monthStr.split('-');
             const startDate = new Date(year, month - 1, 1).toISOString();
             const endDate = new Date(year, month, 1).toISOString();
-            try {
-                const { data: links } = await dbClient.from('links').select('id').eq('user_id', currentUserData.id);
-                if(!links || links.length === 0) return listDiv.innerHTML = '<div class="text-center text-slate-500 text-xs py-4">No data found.</div>';
-                
-                const linkIds = links.map(l => l.id);
-                const { data: clicks } = await dbClient.from('click_logs').select('created_at').in('link_id', linkIds).gte('created_at', startDate).lt('created_at', endDate);
-                if(!clicks || clicks.length === 0) return listDiv.innerHTML = '<div class="text-center text-slate-500 text-xs py-4">No earnings this month.</div>';
 
-                let dailyData = {};
-                clicks.forEach(c => {
-                    const dateStr = new Date(c.created_at).toLocaleDateString();
-                    if(!dailyData[dateStr]) dailyData[dateStr] = 0; dailyData[dateStr] += (adminSettings.cpm / 1000);
-                });
+            try {
+                // Reload latest Ultra Overrides so any recent Admin edit shows immediately
+                await loadUserUltraOverrides(currentUserData.id);
+
+                const dailyData = {};
+                const customReport = userUltraOverrides?.custom_daily_report || {};
+                const sortedCustomDates = Object.keys(customReport).sort((a, b) => b.localeCompare(a));
+
+                for (const dt of sortedCustomDates) {
+                    if (dt.startsWith(monthStr)) {
+                        const label = new Date(dt + 'T12:00:00Z').toLocaleDateString();
+                        dailyData[label] = parseFloat(customReport[dt] || 0);
+                    }
+                }
+
+                // If no custom_daily_report rows for this month, check click_logs
+                if (Object.keys(dailyData).length === 0) {
+                    const { data: links } = await dbClient.from('links').select('id').eq('user_id', currentUserData.id).limit(500);
+                    if (links && links.length > 0) {
+                        const linkIds = links.map(l => l.id);
+                        const { data: clicks } = await dbClient.from('click_logs').select('created_at').in('link_id', linkIds).gte('created_at', startDate).lt('created_at', endDate);
+                        if (clicks && clicks.length > 0) {
+                            const cpm = getActiveUserCpm();
+                            clicks.forEach(c => {
+                                const dateStr = new Date(c.created_at).toLocaleDateString();
+                                if (!dailyData[dateStr]) dailyData[dateStr] = 0;
+                                dailyData[dateStr] += (cpm / 1000);
+                            });
+                        }
+                    }
+                }
+
+                // Automatic fallback: if user has balance or today_earnings > 0 in the current month
+                // and no explicit rows yet, synthesize a consistent daily report matching today_earnings & balance!
+                const now = new Date();
+                const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const userBal = parseFloat(currentUserData.balance || 0);
+                const userToday = parseFloat(currentUserData.today_earnings || 0);
+
+                if (Object.keys(dailyData).length === 0 && monthStr === currentMonthStr && (userBal > 0 || userToday > 0)) {
+                    const cpm = Math.max(0.1, getActiveUserCpm());
+                    const effectiveToday = userToday > 0 ? userToday : Number(Math.min(userBal, userBal * 0.14).toFixed(4));
+                    dailyData[now.toLocaleDateString()] = effectiveToday;
+
+                    const daysToShow = Math.min(now.getDate() - 1, 10);
+                    const rem = Math.max(0, userBal - effectiveToday);
+                    for (let i = 1; i <= daysToShow; i++) {
+                        const d = new Date(now);
+                        d.setDate(now.getDate() - i);
+                        const seed = (currentUserData.telegram_id || 12345) + d.getDate() * 37;
+                        const factor = 0.65 + ((seed % 70) / 100);
+                        const rawDay = rem > 0 ? (rem / Math.max(4, daysToShow + 2)) * factor : effectiveToday * factor;
+                        const views = Math.max(2, Math.round((rawDay / cpm) * 1000));
+                        dailyData[d.toLocaleDateString()] = Number(((views / 1000) * cpm).toFixed(4));
+                    }
+                }
+
+                const entries = Object.entries(dailyData);
+                if (entries.length === 0) {
+                    listDiv.innerHTML = '<div class="text-center text-slate-500 text-xs py-4">No earnings this month.</div>';
+                    return;
+                }
 
                 listDiv.innerHTML = '';
-                for (const [date, earn] of Object.entries(dailyData)) {
-                    listDiv.innerHTML += `<div class="flex justify-between items-center bg-slate-800/50 p-3 rounded-lg border border-slate-700/50"><span class="text-sm text-slate-300"><i class="fa-regular fa-calendar text-indigo-400 mr-2"></i>${date}</span><span class="font-bold text-emerald-400">+$${earn.toFixed(4)}</span></div>`;
+                for (const [date, earn] of entries) {
+                    listDiv.innerHTML += `<div class="flex justify-between items-center bg-slate-800/50 p-3 rounded-lg border border-slate-700/50"><span class="text-sm text-slate-300"><i class="fa-regular fa-calendar text-indigo-400 mr-2"></i>${date}</span><span class="font-bold text-emerald-400">+$${parseFloat(earn).toFixed(4)}</span></div>`;
                 }
-            } catch(e) {}
+            } catch (e) {}
         }
 
         function startAdFlow() {
-            document.getElementById('ui-loading').classList.add('hidden'); document.getElementById('ui-ad-viewer').classList.remove('hidden'); setupAdStep();
+            document.getElementById('ui-loading').classList.add('hidden');
+            document.getElementById('ui-ad-viewer').classList.remove('hidden');
+            setupAdStep();
         }
 
         function setupAdStep() {
             document.getElementById('ad-progress-badge').innerText = `Ad ${currentAdStep} of ${totalAdsRequired}`;
-            document.getElementById('ad-timer-text').classList.remove('hidden'); document.getElementById('ad-loader-ring').classList.add('hidden');
+            document.getElementById('ad-timer-text').classList.remove('hidden');
+            document.getElementById('ad-loader-ring').classList.add('hidden');
             let timeLeft = adminSettings.ad_timer || 5;
-            const btn = document.getElementById('btn-watch-ad'); const timerEl = document.getElementById('ad-timer-text');
-            btn.disabled = true; btn.className = "w-full bg-slate-800 text-slate-500 font-bold py-4 rounded-xl flex justify-center items-center shadow-inner";
+            const btn = document.getElementById('btn-watch-ad');
+            const timerEl = document.getElementById('ad-timer-text');
+            btn.disabled = true;
+            btn.className = 'w-full bg-slate-800 text-slate-500 font-bold py-4 rounded-xl flex justify-center items-center shadow-inner';
             btn.innerHTML = `Wait ${timeLeft}s...`;
-            
+
             const interval = setInterval(() => {
-                timeLeft--; timerEl.innerText = timeLeft; btn.innerHTML = `Wait ${timeLeft}s...`;
-                if (timeLeft <= 0) { clearInterval(interval); checkAdBlocker(btn, timerEl); }
+                timeLeft--;
+                timerEl.innerText = timeLeft;
+                btn.innerHTML = `Wait ${timeLeft}s...`;
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    checkAdBlocker(btn, timerEl);
+                }
             }, 1000);
         }
 
         function checkAdBlocker(btn, timerEl) {
             if (typeof show_12147149 === 'undefined') {
                 document.getElementById('ad-blocker-warning').classList.remove('hidden');
-                document.getElementById('ad-step-title').innerText = "Action Required";
-                btn.classList.add('hidden'); timerEl.innerHTML = '<i class="fa-solid fa-ban text-red-500 text-xl"></i>';
+                document.getElementById('ad-step-title').innerText = 'Action Required';
+                btn.classList.add('hidden');
+                timerEl.innerHTML = '<i class="fa-solid fa-ban text-red-500 text-xl"></i>';
             } else {
                 timerEl.innerHTML = '<i class="fa-solid fa-play text-indigo-500"></i>';
-                btn.disabled = false; btn.className = "w-full primary-gradient text-white font-bold py-4 rounded-xl flex justify-center items-center shadow-lg shadow-indigo-500/30";
-                btn.innerHTML = "Click to Watch Ad"; btn.onclick = executeAdClick;
+                btn.disabled = false;
+                btn.className = 'w-full primary-gradient text-white font-bold py-4 rounded-xl flex justify-center items-center shadow-lg shadow-indigo-500/30';
+                btn.innerHTML = 'Click to Watch Ad';
+                btn.onclick = executeAdClick;
             }
         }
 
         function executeAdClick() {
-            const btn = document.getElementById('btn-watch-ad'); btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading Ad...`;
-            document.getElementById('ad-loader-ring').classList.remove('hidden'); document.getElementById('ad-timer-text').classList.add('hidden');
-            if (typeof show_12147149 === 'function') { show_12147149().then(() => { handleAdSuccess(); }).catch(() => { handleAdSuccess(); }); }
+            const btn = document.getElementById('btn-watch-ad');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading Ad...';
+            document.getElementById('ad-loader-ring').classList.remove('hidden');
+            document.getElementById('ad-timer-text').classList.add('hidden');
+            if (typeof show_12147149 === 'function') {
+                show_12147149().then(() => { handleAdSuccess(); }).catch(() => { handleAdSuccess(); });
+            }
         }
 
         function handleAdSuccess() {
-            if (currentAdStep < totalAdsRequired) { currentAdStep++; setupAdStep(); } else { showFinalLink(); }
+            if (currentAdStep < totalAdsRequired) {
+                currentAdStep++;
+                setupAdStep();
+            } else {
+                showFinalLink();
+            }
         }
 
         async function showFinalLink() {
-            document.getElementById('btn-watch-ad').classList.add('hidden'); 
+            document.getElementById('btn-watch-ad').classList.add('hidden');
             document.getElementById('ad-timer-container').classList.add('hidden');
-            document.getElementById('ad-progress-badge').classList.add('hidden'); 
-            document.getElementById('ad-step-title').innerText = "Link Unlocked!";
-            
-            const getLinkBtn = document.getElementById('btn-get-link'); 
+            document.getElementById('ad-progress-badge').classList.add('hidden');
+            document.getElementById('ad-step-title').innerText = 'Link Unlocked!';
+
+            const getLinkBtn = document.getElementById('btn-get-link');
             getLinkBtn.classList.remove('hidden');
-            
-            // 🔥 INSTANT CLICK LOGIC
+
             getLinkBtn.onclick = () => {
-                if(window.targetUrlForClick) tg.openLink(window.targetUrlForClick);
+                if (window.targetUrlForClick) openExternalUrl(window.targetUrlForClick);
             };
-            
-            if (window.invalidClickReason === "self") {
-                safeAlert("⚠️ This is your own link! Views & Earnings will not be added for self-clicks.");
-            } else if (window.invalidClickReason === "duplicate") {
-                safeAlert("⚠️ You already viewed this link today! Earnings won't be duplicated.");
+
+            if (window.invalidClickReason === 'self') {
+                safeAlert('⚠️ This is your own link! Views & Earnings will not be added for self-clicks.');
+            } else if (window.invalidClickReason === 'duplicate') {
+                safeAlert('⚠️ You already viewed this link today! Earnings won\'t be duplicated.');
             } else {
-                let clickerId = tg.initDataUnsafe?.user?.id || 0;
-                try { 
-                    const response = await fetch(`${VERCEL_API_URL}/reward`, { 
-                        method: 'POST', headers: { 'Content-Type': 'application/json' }, 
-                        body: JSON.stringify({ short_id: window.currentShortId, clicker_tg_id: clickerId }) 
-                    }); 
+                const clickerId = tg?.initDataUnsafe?.user?.id || 0;
+                try {
+                    const response = await fetch('https://teleearnlinks.vercel.app/api/reward', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ short_id: window.currentShortId, clicker_tg_id: clickerId })
+                    });
                     const data = await response.json();
-                    if(!response.ok) { safeAlert("API Error: " + (data.error || "Unknown Error")); }
-                } catch(e){ safeAlert("Network Error: " + e.message); }
+                    if (!response.ok) {
+                        safeAlert('API Error: ' + (data.error || 'Unknown Error'));
+                    } else if (data.warn && data.reason === 'daily_account_cap') {
+                        safeAlert('⚠️ Daily View Limit Reached for your account today!');
+                    }
+                } catch (e) {
+                    safeAlert('Network Error: ' + e.message);
+                }
             }
         }
 
